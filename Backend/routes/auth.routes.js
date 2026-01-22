@@ -1,9 +1,10 @@
 const express = require('express');
 const routes = express.Router()
-const studentController = require('../controllers/auth.controller')
+const authController = require('../controllers/auth.controller') 
 
 
-routes.post('/registerStudent', studentController.registerStudent)
-routes.post('/loginStudent', studentController.loginStudent)
+routes.post("/register", authController.authRegister)
+routes.post("/login", authController.authLogin)
+
 
 module.exports = routes;

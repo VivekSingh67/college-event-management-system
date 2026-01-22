@@ -1,66 +1,69 @@
-const registerStudentModel = require('../models/studentAuth.model');
-const bcrypt = require('bcryptjs')
+const authModel = require('../models/auth.model')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
-const registerStudent = async (req, res) => {
-    let { fullname, email, mobile, department, year, password } = req.body;
-
-    if (!fullname || !email || !mobile || !department || !year || !password) {
+const authRegister = async (req, res) => {
+    let { fullname, email, role, password } = req.body;
+    if (!fullname || !fullname.firstname || !email || !password) {
         return res.status(401).json({
-            message: "All field are required"
+            message: "All Field Are Required"
         })
     }
 
-    const isAlreadyExist = await registerStudentModel.findOne({ email: email })
-
-    if (isAlreadyExist) {
+    let isExists = await findOne({ email: email })
+    if (!isExists) {
         return res.status(401).json({
-            message: "This email already register"
+            message: "Email Already Exists"
         })
     }
 
-    let hashPassword = await bcrypt.hash(password, 10);
-    const student = await registerStudentModel.create({
-        fullname,
+    let hashPassword = await bcrypt.hash(password, 10)
+
+    const user = await authModel.create({
+        fullname: {
+            firstname: fullname.firstname,
+            lastname: fullname.lastname
+        },
         email,
-        mobile,
-        department,
-        year,
+        role,
         password: hashPassword
     })
 
-    let token = jwt.sign({ id: student._id, email: student.email, role: student.role }, process.env.JWT_SECRET)
+
+    let token = jwt.sign({ id: user._id, role: user.role, email: user.email }, process.env.JWT_SECRET)
     res.cookie("token", token)
     res.status(200).json({
-        message: "Studend Created Successfully",
-        student
+        token,
+        user
     })
 }
 
-const loginStudent = async (req, res) => {
-    let { email, password } = req.body;
 
-    let student = await registerStudentModel.findOne({ email: email }).select("+password")
-    if (!student) {
+const authLogin = async (req, res) => {
+    let { email, password } = req.body
+
+    let user = await authModel.findOne({ email: email })
+    if (!user) {
         return res.status(401).json({
-            mesaage: "Invalid Email or Password"
+            message: "Invalid Email or Password"
         })
     }
 
-    let decode = await bcrypt.compare(password, student.password);
-    if (!decode) {
+    let comparePassword = await bcrypt.compare(password, user.password)
+    if (!comparePassword) {
         return res.status(401).json({
-            mesaage: "Invalid Email or Password"
+            message: "Invalid Email or Password"
         })
     }
 
-    let token = jwt.sign({ id: student._id, email: student.email, role: student.role }, process.env.JWT_SECRET)
+    let token = jwt.sign({ id: user._id, role: user.role, email: user.email }, process.env.JWT_SECRET)
     res.cookie("token", token)
     res.status(200).json({
-        message: "Login Successfully",
-        student
+        message: "Successfully Login",
+        token,
+        user
     })
 
 }
 
-module.exports = { registerStudent, loginStudent }
+module.exports = { authRegister, authLogin }
