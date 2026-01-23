@@ -31,6 +31,50 @@ const createBranch = async (req, res) => {
   }
 };
 
+const getBranchData = async (req, res) => {
+  try {
+    let branch = await branchModel.find()
+    res.status(200).json({
+      message: "Get Successfully branch Data",
+      branch
+    })
+  } catch (error) {
+    res.status(401).json({
+      message: error.message
+    })
+  }
+}
+
+const deleteBranch = async (req, res) => {
+  try {
+    const branch = await branchModel.findOneAndDelete({ _id: req.params.id })
+
+    res.status(200).json({
+      branch
+    })
+
+  } catch (error) {
+    res.status(401).json({
+      message: error.message
+    })
+  }
+
+}
+
+const updateBranch = async (req, res) => {
+  try {
+     const {branchName, branchAddress} = req.body;
+    let branch = await branchModel.findOneAndUpdate({_id: req.params.id}, {branchName, branchAddress})
+    res.status(200).json({
+      message: "Branch Updated Successfully",
+      branch
+    })
+  } catch (error) {
+    res.status(401).json({
+      message: error.message
+    })
+  }
+}
 
 
-module.exports = { createBranch }
+module.exports = { createBranch, getBranchData, updateBranch, deleteBranch }
