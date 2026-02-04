@@ -11,7 +11,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookiesParser())
 
-app.use('/api/auth', authRoutes)
+app.use('/auth', authRoutes)
 app.use('/api', branchRoutes)
 
 module.exports = app;

@@ -4,14 +4,14 @@ const bcrypt = require('bcryptjs')
 
 const authRegister = async (req, res) => {
     let { fullname, email, role, password } = req.body;
-    if (!fullname || !fullname.firstname || !email || !password) {
+    if (!fullname.firstname || !email || !password) {
         return res.status(401).json({
             message: "All Field Are Required"
         })
     }
 
-    let isExists = await findOne({ email: email })
-    if (!isExists) {
+    let isExists = await authModel.findOne({ email: email })
+    if (isExists) {
         return res.status(401).json({
             message: "Email Already Exists"
         })
