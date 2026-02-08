@@ -48,7 +48,9 @@ const createDepartment = async (req, res) => {
 const getDepartmentData = async (req, res) => {
   try {
     let { branchId } = req.params;
-    const departments = await departmentModel.find({ branchId }).populate("branchId", "branchName");
+    const departments = await departmentModel
+      .find({ branchId })
+      .populate("branchId", "branchName");
     return res.status(201).json({
       success: true,
       count: departments.length,
@@ -62,4 +64,25 @@ const getDepartmentData = async (req, res) => {
   }
 };
 
-module.exports = { createDepartment, getDepartmentData };
+const updateDepartment = async (req, res) => {
+  try {
+    let { departmentName } = req.body;
+
+    let department = await departmentModel.findOneAndUpdate(
+      { _id: req.params.id },
+      { departmentName },
+    );
+
+    return res.status(201).json({
+      success: true,
+      data: department,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = { createDepartment, getDepartmentData, updateDepartment };
