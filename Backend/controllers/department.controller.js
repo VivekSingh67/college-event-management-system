@@ -73,9 +73,12 @@ const updateDepartment = async (req, res) => {
       { departmentName },
     );
 
-    return res.status(201).json({
+    let updateDepartmentData = await departmentModel.findOne({
+      _id: req.params.id,
+    });
+    res.status(201).json({
       success: true,
-      data: department,
+      data: updateDepartmentData,
     });
   } catch (error) {
     return res.status(500).json({
@@ -85,4 +88,19 @@ const updateDepartment = async (req, res) => {
   }
 };
 
-module.exports = { createDepartment, getDepartmentData, updateDepartment };
+const deleteDepartment = async (req, res) => {
+  try {
+    let department = await departmentModel.findOneAndDelete({_id: req.params.id})
+    return res.status(201).json({
+        success: true,
+        data: department
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = { createDepartment, getDepartmentData, updateDepartment, deleteDepartment };

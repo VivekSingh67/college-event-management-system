@@ -11,7 +11,7 @@ const batchSchema = mongoose.Schema({
         ref: "Department",
         required: true,
     },
-    BatchName: {
+    batchName: {
         type: String,
         required: true,
         trim: true
