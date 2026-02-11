@@ -76,7 +76,7 @@ const updateDepartment = async (req, res) => {
     let updateDepartmentData = await departmentModel.findOne({
       _id: req.params.id,
     });
-    res.status(201).json({
+   return res.status(201).json({
       success: true,
       data: updateDepartmentData,
     });

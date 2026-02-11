@@ -6,7 +6,7 @@ const batchSchema = mongoose.Schema({
         ref: "Branch",
         required: true
     },
-    departmentID: {
+    departmentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Department",
         required: true,
