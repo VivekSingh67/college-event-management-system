@@ -6,6 +6,6 @@ const batchController = require('../controllers/batch.controller')
 routes.post('/create', authMiddleware.authUserMiddleware, batchController.createBatch)
 routes.get('/getData', authMiddleware.authUserMiddleware, batchController.getData)
 routes.put('/update/:id', authMiddleware.authUserMiddleware, batchController.updateBatch)
-routes.put('/delete/:id', authMiddleware.authUserMiddleware, batchController.deleteBatch)
+routes.delete('/delete/:id', authMiddleware.authUserMiddleware, batchController.deleteBatch)
 
 module.exports = routes

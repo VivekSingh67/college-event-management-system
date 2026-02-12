@@ -1,43 +1,56 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
-const hodSchema = mongoose.Schema({
-    fullname: {
-        firstname: {
-            type: String,
-            required: true,
-            trim: true
-        },
-        lastname: {
-            type: String,
-            trim: true
-        },
+const hodSchema = mongoose.Schema(
+  {
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
     },
-    email: {
+    departmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      required: true,
+    },
+    fullname: {
+      firstname: {
         type: String,
         required: true,
-        unique: true,
-        lowercase: true,
-        trim: true
+        trim: true,
+      },
+      lastname: {
+        type: String,
+        trim: true,
+      },
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
     mobile: {
-        type: Number,
-        require: true,
-        trim: true
+      type: Number,
+      require: true,
+      trim: true,
     },
     isActive: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
     updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-    }
-},{
-    timestamps: true
-})
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-module.exports = mongoose.model("Hod", hodSchema)
+module.exports = mongoose.model("Hod", hodSchema);

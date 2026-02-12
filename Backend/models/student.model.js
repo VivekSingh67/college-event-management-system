@@ -34,10 +34,10 @@ const studentSchema = mongoose.Schema({
         ref: "Department",
         require: true
     },
-    Batch: {
-        type: String,
-        require: true,
-        trim: true
+    batch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Batch",
+        require: true
     },
     year: {
         type: Number,
