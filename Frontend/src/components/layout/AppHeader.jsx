@@ -1,6 +1,6 @@
 // components/AppHeader.jsx   (or wherever you place it)
 import { Bell, Search, ChevronDown, LogOut, User } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
