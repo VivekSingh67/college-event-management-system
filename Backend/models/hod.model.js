@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const hodSchema = mongoose.Schema(
   {
+     userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     branchId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
@@ -34,10 +39,6 @@ const hodSchema = mongoose.Schema(
       type: Number,
       require: true,
       trim: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

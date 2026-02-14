@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 
 const createHod = async (req, res) => {
   try {
-    let { branchId, departmentId, fullname, email, mobile, password, role } =
+    let { userId, branchId, departmentId, fullname, email, mobile, password, role } =
       req.body;
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -50,6 +50,7 @@ const createHod = async (req, res) => {
     });
 
     const hod = await hodModel.create({
+      userId: auth._id,  
       branchId,
       departmentId,
       fullname,
@@ -92,12 +93,21 @@ const getData = async (req, res) => {
   }
 };
 
-const updateData = async () => {
+const updateData = async (req, res) => {
   try {
     let { branchId, departmentId, fullname, email, mobile, role } = req.body;
 
+    const auth = await authModel.findOneAndUpdate({ _id: req.params.id },{
+      fullname: {
+        firstname: fullname.firstname,
+        lastname: fullname.lastname,
+      },
+      email,
+      role,
+    });
+
     const hod = await hodModel.findOneAndUpdate(
-      { _id: req.params.id },
+      { userId: req.params.id },
       {
         branchId,
         departmentId,
@@ -111,13 +121,12 @@ const updateData = async () => {
       },
     );
 
-    const updateDatas = await hodModel.findOne(req.params.id);
+    const updateDatas = await hodModel.findOne({userId: req.params.id});
 
     return res.status(201).json({
       success: true,
       data: updateDatas,
     });
-    
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -126,4 +135,12 @@ const updateData = async () => {
   }
 };
 
-module.exports = { createHod, getData, updateData };
+// const deleteData = async (req, res) => {
+// try {
+//     let {isActive} = req.body
+// } catch (error) {
+    
+// }
+// }
+
+module.exports = { createHod, getData, updateData, deleteData };

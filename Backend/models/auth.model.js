@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const authSchema = new mongoose.Schema(
   {
@@ -6,33 +6,37 @@ const authSchema = new mongoose.Schema(
       firstname: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
       },
       lastname: {
         type: String,
-        trim: true
-      }
+        trim: true,
+      },
     },
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-      trim: true
+      trim: true,
     },
     role: {
       type: String,
       enum: ["superAdmin", "admin", "hod", "student"],
-      default: "student"
+      default: "student",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     password: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-module.exports = mongoose.model('User', authSchema);
+module.exports = mongoose.model("User", authSchema);
