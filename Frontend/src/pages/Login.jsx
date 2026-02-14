@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth, UserRole } from "../contexts/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -8,17 +8,9 @@ import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
 import loginIllustration from "../assets/login-illustration.png";
 
-const roles = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "branch_admin", label: "Branch Admin" },
-  { value: "hod", label: "HOD" },
-  { value: "student", label: "Student" },
-];
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
   const [showPassword, setShowPassword] = useState(false);
 
   const { login } = useAuth();
@@ -26,13 +18,13 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(email, password, role);
+    login(email, password); // assuming login no longer needs role
     navigate("/dashboard");
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* Left - Illustration (visible on large screens) */}
+      {/* Left side - Illustration (visible on large screens) */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden items-center justify-center p-12">
         <div className="relative z-10 text-center space-y-6 max-w-md">
           <div className="flex items-center justify-center gap-3 mb-8">
@@ -56,78 +48,67 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Decorative background circles */}
+        {/* Decorative circles */}
         <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary-foreground/5" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-primary-foreground/5" />
       </div>
 
-      {/* Right - Login Form */}
+      {/* Right side - Login Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
-          {/* Mobile-only logo */}
-          <div className="lg:hidden flex items-center gap-3 justify-center mb-4">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-3 justify-center mb-6">
             <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
               <GraduationCap className="h-7 w-7 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-primary">CEMS</h1>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <p className="text-muted-foreground">Sign in to continue to your dashboard</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Role selection */}
-            <div className="space-y-2">
-              <Label>Login As</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {roles.map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() => setRole(r.value)}
-                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                      role === r.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card text-foreground border-border hover:border-primary/40"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-11"
+                required
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:text-primary/80 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 pr-10"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -140,14 +121,20 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full h-11 text-base font-semibold gradient-primary border-0"
+              className="w-full h-11 text-base font-semibold gradient-primary border-0 hover:opacity-90 transition-opacity"
             >
               Sign In
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Demo: Select a role and click Sign In
+          <p className="text-center text-sm text-muted-foreground pt-2">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-primary hover:text-primary/80 hover:underline font-medium"
+            >
+              Register now
+            </Link>
           </p>
         </div>
       </div>
