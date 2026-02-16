@@ -1,7 +1,12 @@
 const mongoose = require("mongoose");
 
-const studentSchema = mongoose.Schema(
+const adminSchema = mongoose.Schema(
   {
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -15,6 +20,7 @@ const studentSchema = mongoose.Schema(
       },
       lastname: {
         type: String,
+        required: ture,
         trim: true,
       },
     },
@@ -27,42 +33,17 @@ const studentSchema = mongoose.Schema(
     },
     mobile: {
       type: Number,
-      require: true,
-      trim: true,
-    },
-    branch: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Branch",
-      require: true,
-    },
-    department: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Department",
-      require: true,
-    },
-    batch: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Batch",
-      require: true,
-    },
-    year: {
-<<<<<<< HEAD
-        type: Number,
-        require: true,
-        trim: true
-=======
-      type: Number,
-      require: true,
-      trim: true,
->>>>>>> dfc5e3e (feb16)
+      required: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
   },
   {
@@ -70,4 +51,4 @@ const studentSchema = mongoose.Schema(
   },
 );
 
-module.exports = mongoose.model("student", studentSchema);
+module.exports = mongoose.model("Admin", adminSchema);

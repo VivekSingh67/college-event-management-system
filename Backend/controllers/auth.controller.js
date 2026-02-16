@@ -4,7 +4,17 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const authRegister = async (req, res) => {
-  let { fullname, email, role, password, branch, department, batch, year, mobile } = req.body;
+  let {
+    fullname,
+    email,
+    role,
+    password,
+    branch,
+    department,
+    batch,
+    year,
+    mobile,
+  } = req.body;
   if (!fullname.firstname || !email || !password) {
     return res.status(401).json({
       message: "All Field Are Required",
@@ -31,15 +41,18 @@ const authRegister = async (req, res) => {
   });
 
   await studentModel.create({
-      userId: user._id,
-      fullname,
-      email,
-      mobile,
-      branch,
-      department,
-      batch,
-      year,
-    });
+    userId: user._id,
+    fullname: {
+      firstname: fullname.firstname,
+      lastname: fullname.lastname,
+    },
+    email,
+    mobile,
+    branch,
+    department,
+    batch,
+    year,
+  });
 
   let token = jwt.sign(
     { id: user._id, role: user.role, email: user.email },
@@ -62,7 +75,11 @@ const authLogin = async (req, res) => {
     });
   }
 
+<<<<<<< HEAD
   if(!user.isActive) {
+=======
+  if (!user.isActive) {
+>>>>>>> dfc5e3e (feb16)
     return res.status(403).json({
       message: "Your Account is Deactivated. Please Contact Admin.",
     });

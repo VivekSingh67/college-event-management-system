@@ -76,7 +76,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const items = navByRole[user?.role || "student"] || navByRole.student;
+  const items = navByRole[user?.role || "super_admin"] || navByRole.student;
 
   const SidebarContent = () => (
     <>

@@ -17,7 +17,7 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   // Fallback to student dashboard if role is missing / invalid
-  const role = user?.role || "student";
+  const role = user?.role || "super_admin";
   const DashboardComponent = dashboardByRole[role] || StudentDashboard;
 
   return (
