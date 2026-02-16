@@ -9,6 +9,7 @@ const branchRoutes = require('./routes/branch.routes')
 const departmentRoutes = require('./routes/department.routes')
 const batchRoutes = require('./routes/batch.routes')
 const hodRoutes = require('./routes/hod.routes')
+const studentRoutes = require('./routes/student.routes')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -19,5 +20,6 @@ app.use('/branch', branchRoutes)
 app.use('/department', departmentRoutes)
 app.use('/batch', batchRoutes)
 app.use('/hod', hodRoutes)
+app.use('/student', studentRoutes)
 
 module.exports = app;

@@ -93,9 +93,10 @@ const getData = async (req, res) => {
   }
 };
 
+
 const updateData = async (req, res) => {
   try {
-    let { branchId, departmentId, fullname, email, mobile, role } = req.body;
+    let { branchId, departmentId, fullname, email, mobile, role, isActive } = req.body;
 
     const auth = await authModel.findOneAndUpdate({ _id: req.params.id },{
       fullname: {
@@ -104,6 +105,7 @@ const updateData = async (req, res) => {
       },
       email,
       role,
+      isActive
     });
 
     const hod = await hodModel.findOneAndUpdate(
@@ -136,22 +138,4 @@ const updateData = async (req, res) => {
 };
 
 
-const inActiveHod = async (req, res) => {
-  try {
-    let { isActive } = req.body;
-    const auth = await authModel.findOneAndUpdate({ _id: req.params.id }, { isActive: isActive }).populate("hod");
-    return res.status(201).json({
-      success: true,
-      message: "Hod updated successfully",
-      data: auth,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-module.exports = { createHod, getData, updateData, inActiveHod }; 
+module.exports = { createHod, getData, updateData }; 
