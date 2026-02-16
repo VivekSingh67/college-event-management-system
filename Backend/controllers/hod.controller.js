@@ -135,12 +135,23 @@ const updateData = async (req, res) => {
   }
 };
 
-// const deleteData = async (req, res) => {
-// try {
-//     let {isActive} = req.body
-// } catch (error) {
-    
-// }
-// }
 
-module.exports = { createHod, getData, updateData, deleteData };
+const inActiveHod = async (req, res) => {
+  try {
+    let { isActive } = req.body;
+    const auth = await authModel.findOneAndUpdate({ _id: req.params.id }, { isActive: isActive }).populate("hod");
+    return res.status(201).json({
+      success: true,
+      message: "Hod updated successfully",
+      data: auth,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+module.exports = { createHod, getData, updateData, inActiveHod }; 

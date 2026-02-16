@@ -62,6 +62,12 @@ const authLogin = async (req, res) => {
     });
   }
 
+  if(user.isActive === false) {
+    return res.status(403).json({
+      message: "Your Account is Deactivated. Please Contact Admin.",
+    });
+  }
+
   let comparePassword = await bcrypt.compare(password, user.password);
   if (!comparePassword) {
     return res.status(401).json({

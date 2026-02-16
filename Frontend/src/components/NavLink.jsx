@@ -1,4 +1,3 @@
-// components/ui/NavLink.jsx   (or wherever it fits in your project)
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { forwardRef } from "react";
 import { cn } from "../../lib/utils";
