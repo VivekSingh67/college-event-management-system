@@ -25,7 +25,9 @@ const navByRole = {
   super_admin: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Branches", url: "/branches", icon: Building2 },
+    { title: "Branch Admins", url: "/branch-admins", icon: Users },  
     { title: "Departments", url: "/departments", icon: Building },
+    { title: "HODs", url: "/hods", icon: GraduationCap },
     { title: "Students", url: "/students", icon: GraduationCap },
     { title: "Events", url: "/events", icon: Calendar },
     { title: "Approvals", url: "/approvals", icon: ClipboardCheck },
@@ -33,11 +35,11 @@ const navByRole = {
     { title: "Reports", url: "/reports", icon: BarChart3 },
     { title: "Queries", url: "/queries", icon: MessageSquare },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
   ],
   branch_admin: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Departments", url: "/departments", icon: Building },
+    { title: "HODs", url: "/hods", icon: GraduationCap },
     { title: "Students", url: "/students", icon: GraduationCap },
     { title: "Events", url: "/events", icon: Calendar },
     { title: "Create Event", url: "/events/create", icon: PlusCircle },
@@ -46,7 +48,6 @@ const navByRole = {
     { title: "Reports", url: "/reports", icon: BarChart3 },
     { title: "Queries", url: "/queries", icon: MessageSquare },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
   ],
   hod: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -57,7 +58,6 @@ const navByRole = {
     { title: "Reports", url: "/reports", icon: BarChart3 },
     { title: "Queries", url: "/queries", icon: MessageSquare },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
   ],
   student: [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -66,7 +66,6 @@ const navByRole = {
     { title: "History", url: "/history", icon: ClipboardCheck },
     { title: "Feedback", url: "/feedback", icon: MessageSquare },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
   ],
 };
 

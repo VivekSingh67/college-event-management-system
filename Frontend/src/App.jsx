@@ -9,6 +9,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EventsPage from "./pages/EventsPage";
+import BranchesPage from "./pages/super-admin/BranchPage";
+import BranchAdminsPage from "./pages/super-admin/BranchAdmin";
+import DepartmentsPage from "./pages/super-admin/DepartmentsPage";
+import HODsPage from "./pages/super-admin/Hods";
+import StudentPage from "./pages/super-admin/StudentPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -26,9 +31,11 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/branches" element={<PlaceholderPage />} />
-            <Route path="/departments" element={<PlaceholderPage />} />
-            <Route path="/students" element={<PlaceholderPage />} />
+            <Route path="/branches" element={<BranchesPage />} />
+            <Route path="/branch-admins" element={<BranchAdminsPage />} />
+            <Route path="/departments" element={<DepartmentsPage />} />
+            <Route path="/hods" element={<HODsPage />} />
+            <Route path="/students" element={<StudentPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/create" element={<EventsPage />} />
             <Route path="/approvals" element={<PlaceholderPage />} />

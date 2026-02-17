@@ -1,7 +1,7 @@
 import { useAuth } from "../contexts/AuthContext";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 
-import SuperAdminDashboard from "./SuperAdminDashboard";
+import SuperAdminDashboard from "./super-admin/SuperAdminDashboard";
 import BranchAdminDashboard from "./BranchAdminDashboard";
 import HODDashboard from "./HODDashboard";
 import StudentDashboard from "./StudentDashboard";

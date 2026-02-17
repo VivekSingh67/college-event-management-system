@@ -46,15 +46,9 @@ const studentSchema = mongoose.Schema(
       require: true,
     },
     year: {
-<<<<<<< HEAD
-        type: Number,
-        require: true,
-        trim: true
-=======
       type: Number,
       require: true,
       trim: true,
->>>>>>> dfc5e3e (feb16)
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
