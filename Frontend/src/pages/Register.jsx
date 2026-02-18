@@ -23,7 +23,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Dropdown options (customize these lists as per your college / needs)
+  
   const branches = [
     "Computer Science & Engineering (CSE)",
     "Information Technology (IT)",

@@ -20,7 +20,7 @@ const adminSchema = mongoose.Schema(
       },
       lastname: {
         type: String,
-        required: ture,
+        required: true,
         trim: true,
       },
     },

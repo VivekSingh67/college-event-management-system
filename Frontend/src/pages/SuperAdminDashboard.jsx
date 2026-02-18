@@ -9,10 +9,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { StatCard } from "../../components/dashboard/StatCard";
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
+import { StatCard } from "../components/dashboard/StatCard";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 
 const recentEventRequests = [
   { name: "Tech Fest 2026", branch: "Engineering", status: "pending", date: "Feb 20, 2026" },

@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express = require("express")
 const app = express()
+const cors = require("cors")
 const db = require("./db/db")
 db()
 const cookiesParser = require('cookie-parser')
@@ -15,6 +16,11 @@ const studentRoutes = require('./routes/student.routes')
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookiesParser())
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+
+}))
 
 app.use('/auth', authRoutes)
 app.use('/branch', branchRoutes)

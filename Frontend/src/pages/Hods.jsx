@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { DashboardLayout } from "../../components/layout/DashboardLayout";
-import { useAuth } from "../../contexts/AuthContext";
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { DashboardLayout } from "../components/layout/DashboardLayout";
+import { useAuth } from "../contexts/AuthContext";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../components/ui/table";
+} from "../components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../../components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   User,
   PlusCircle,

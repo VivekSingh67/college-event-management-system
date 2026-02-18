@@ -9,11 +9,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EventsPage from "./pages/EventsPage";
-import BranchesPage from "./pages/super-admin/BranchPage";
-import BranchAdminsPage from "./pages/super-admin/BranchAdmin";
-import DepartmentsPage from "./pages/super-admin/DepartmentsPage";
-import HODsPage from "./pages/super-admin/Hods";
-import StudentPage from "./pages/super-admin/StudentPage";
+import BranchesPage from "./pages/BranchPage";
+import BranchAdminsPage from "./pages/BranchAdmin";
+import DepartmentsPage from "./pages/DepartmentsPage";
+import HODsPage from "./pages/Hods";
+import StudentPage from "./pages/StudentPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 

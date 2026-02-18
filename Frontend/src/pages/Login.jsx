@@ -18,7 +18,7 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(email, password); // assuming login no longer needs role
+    login(email, password); 
     navigate("/dashboard");
   };
 
