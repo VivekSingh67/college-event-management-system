@@ -14,6 +14,12 @@ import BranchAdminsPage from "./pages/BranchAdmin";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import HODsPage from "./pages/Hods";
 import StudentPage from "./pages/StudentPage";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
+import ApprovalsPage from "./pages/ApprovalsPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import ProfilePage from "./pages/ProfilePage";
+import QueriesPage from "./pages/QueriesPage";
+import ReportsPage from "./pages/ReportsPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -38,12 +44,12 @@ const App = () => (
             <Route path="/students" element={<StudentPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/create" element={<EventsPage />} />
-            <Route path="/approvals" element={<PlaceholderPage />} />
-            <Route path="/announcements" element={<PlaceholderPage />} />
-            <Route path="/reports" element={<PlaceholderPage />} />
-            <Route path="/queries" element={<PlaceholderPage />} />
-            <Route path="/notifications" element={<PlaceholderPage />} />
-            <Route path="/profile" element={<PlaceholderPage />} />
+            <Route path="/approvals" element={<ApprovalsPage />} />
+            <Route path="/announcements" element={<AnnouncementsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/queries" element={<QueriesPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/applications" element={<PlaceholderPage />} />
             <Route path="/history" element={<PlaceholderPage />} />
             <Route path="/feedback" element={<PlaceholderPage />} />

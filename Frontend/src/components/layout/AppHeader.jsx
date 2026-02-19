@@ -2,7 +2,7 @@
 import { Bell, Search, ChevronDown, LogOut, User } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,11 @@ const roleLabels = {
 
 export function AppHeader() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const profile = () => {
+    navigate("/profile");
+  };
 
   return (
     <header className="h-16 border-b bg-card px-6 flex items-center justify-between sticky top-0 z-30">
@@ -58,7 +63,7 @@ export function AppHeader() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={profile}>
               <User className="mr-2 h-4 w-4" /> Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />

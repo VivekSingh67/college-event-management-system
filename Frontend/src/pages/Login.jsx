@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
-
+import { toast } from "sonner";
 import loginIllustration from "../assets/login-illustration.png";
 
 export default function Login() {
@@ -16,10 +16,16 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(email, password); 
-    navigate("/dashboard");
+    let success = await login(email, password);
+    console.log(success )
+    if (success ) {
+      toast.success("Login Successfully");
+      navigate("/dashboard");
+    } else {
+      toast.error("Login Failed");
+    }
   };
 
   return (
@@ -44,7 +50,8 @@ export default function Login() {
             College Event Management System
           </h2>
           <p className="text-primary-foreground/80 text-base">
-            Manage events, track participation, and streamline college activities — all in one place.
+            Manage events, track participation, and streamline college
+            activities — all in one place.
           </p>
         </div>
 
@@ -66,7 +73,9 @@ export default function Login() {
 
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
-            <p className="text-muted-foreground">Sign in to continue to your dashboard</p>
+            <p className="text-muted-foreground">
+              Sign in to continue to your dashboard
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
