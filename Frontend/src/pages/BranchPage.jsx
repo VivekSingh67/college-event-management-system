@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui/card";
@@ -33,39 +33,12 @@ import {
   List,
 } from "lucide-react";
 import { toast } from "sonner";
-
-const mockBranches = [
-  {
-    id: "1",
-    branchName: "Engineering",
-    branchAddress: "Block A, Academic Complex, North Campus",
-    createdBy: "Prof. Rajesh Mehta",
-  },
-  {
-    id: "2",
-    branchName: "Science",
-    branchAddress: "Science Faculty Building, Central Campus",
-    createdBy: "Dr. Sunita Verma",
-  },
-  {
-    id: "3",
-    branchName: "Arts & Humanities",
-    branchAddress: "Old Arts Block, South Wing",
-    createdBy: "Prof. Anjali Desai",
-  },
-  {
-    id: "4",
-    branchName: "Commerce & Management",
-    branchAddress: "Management Studies Building, East Campus",
-    createdBy: "Dr. Manoj Kapoor",
-  },
-  {
-    id: "5",
-    branchName: "Law",
-    branchAddress: "Law School Annex, West Campus",
-    createdBy: "Adv. Priya Sharma",
-  },
-];
+import {
+  createBranches,
+  getBranches,
+  updateBranch,
+  deleteBranch,
+} from "../services/branchService";
 
 const emptyForm = {
   branchName: "",
@@ -76,7 +49,7 @@ export default function BranchesPage() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
 
-  const [branches, setBranches] = useState(mockBranches);
+  const [branches, setBranches] = useState([]);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState(isStudent ? "card" : "table");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,10 +57,26 @@ export default function BranchesPage() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
-  const filteredBranches = branches.filter((b) =>
-    b.branchName.toLowerCase().includes(search.toLowerCase()) ||
-    b.branchAddress.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredBranches = branches.filter((b) => {
+    if (!b?.branchName || !b?.branchAddress) return false;
+    return (
+      b.branchName.toLowerCase().includes(search.toLowerCase()) ||
+      b.branchAddress.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  useEffect(() => {
+    fetchBranches();
+  }, [branches]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await getBranches();
+      setBranches(res.data.branch);
+    } catch (error) {
+      toast.error("Failed to fetch branches");
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -110,26 +99,32 @@ export default function BranchesPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
-
-    const newBranch = {
-      id: String(branches.length + 1),
-      branchName: form.branchName.trim(),
-      branchAddress: form.branchAddress.trim(),
-      createdBy: user?.name || "Current User", // Real app mein user._id store hoga
-    };
-
-    setBranches([newBranch, ...branches]);
-    setForm(emptyForm);
-    setErrors({});
-    setDialogOpen(false);
-    toast.success("Branch added successfully!");
+    try {
+      const res = await createBranches({
+        branchName: form.branchName.trim(),
+        branchAddress: form.branchAddress.trim(),
+      });
+      setBranches((prev) => [res.data, ...prev]);
+      setForm(emptyForm);
+      setErrors({});
+      setDialogOpen(false);
+      toast.success("Branch added successfully!");
+    } catch (error) {
+      console.log(error.message);
+      toast.error("Failed to add branch");
+    }
   };
 
-  const handleDelete = (id) => {
-    setBranches(branches.filter((b) => b.id !== id));
-    toast.success("Branch deleted");
+  const handleDelete = async (id) => {
+    try {
+      await deleteBranch(id);
+      setBranches(prev => prev.filter(b => b._id !== id));
+      toast.success("Branch deleted");
+    } catch (error) {
+      toast.success("Could not delete branch");
+    }
   };
 
   return (
@@ -140,16 +135,11 @@ export default function BranchesPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Branches</h1>
             <p className="text-muted-foreground">
-              {isStudent
-                ? "View college branches"
-                : "Manage college branches"}
+              {isStudent ? "View college branches" : "Manage college branches"}
             </p>
           </div>
           {!isStudent && (
-            <Button
-              onClick={() => setDialogOpen(true)}
-              className="gap-2"
-            >
+            <Button onClick={() => setDialogOpen(true)} className="gap-2">
               <PlusCircle className="h-4 w-4" /> Add Branch
             </Button>
           )}
@@ -173,7 +163,11 @@ export default function BranchesPage() {
                 variant={viewMode === "table" ? "default" : "ghost"}
                 size="icon"
                 onClick={() => setViewMode("table")}
-                className={viewMode === "table" ? "bg-primary text-primary-foreground rounded-none" : "rounded-none"}
+                className={
+                  viewMode === "table"
+                    ? "bg-primary text-primary-foreground rounded-none"
+                    : "rounded-none"
+                }
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -181,7 +175,11 @@ export default function BranchesPage() {
                 variant={viewMode === "card" ? "default" : "ghost"}
                 size="icon"
                 onClick={() => setViewMode("card")}
-                className={viewMode === "card" ? "bg-primary text-primary-foreground rounded-none" : "rounded-none"}
+                className={
+                  viewMode === "card"
+                    ? "bg-primary text-primary-foreground rounded-none"
+                    : "rounded-none"
+                }
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
@@ -204,9 +202,15 @@ export default function BranchesPage() {
               <TableBody>
                 {filteredBranches.map((branch) => (
                   <TableRow key={branch.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">{branch.branchName}</TableCell>
-                    <TableCell className="text-muted-foreground">{branch.branchAddress}</TableCell>
-                    <TableCell className="text-muted-foreground">{branch.createdBy}</TableCell>
+                    <TableCell className="font-medium">
+                      {branch.branchName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {branch.branchAddress}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {branch.createdBy}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
@@ -219,14 +223,18 @@ export default function BranchesPage() {
                         </Button>
                         {!isStudent && (
                           <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(branch.id)}
+                              onClick={() => handleDelete(branch._id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -238,7 +246,10 @@ export default function BranchesPage() {
                 ))}
                 {filteredBranches.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center py-10 text-muted-foreground"
+                    >
                       No branches found
                     </TableCell>
                   </TableRow>
@@ -250,18 +261,24 @@ export default function BranchesPage() {
           /* Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredBranches.map((branch) => (
-              <Card key={branch.id} className="p-5 hover:shadow-md transition-shadow">
+              <Card
+                key={branch.id}
+                className="p-5 hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Building2 className="h-5 w-5 text-primary" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-lg mb-1">{branch.branchName}</h3>
+                <h3 className="font-semibold text-lg mb-1">
+                  {branch.branchName}
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {branch.branchAddress}
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Created by: <span className="font-medium">{branch.createdBy}</span>
+                  Created by:{" "}
+                  <span className="font-medium">{branch.createdBy}</span>
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -305,7 +322,9 @@ export default function BranchesPage() {
                 id="branch-name"
                 placeholder="e.g. Engineering"
                 value={form.branchName}
-                onChange={(e) => setForm({ ...form, branchName: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, branchName: e.target.value })
+                }
               />
               {errors.branchName && (
                 <p className="text-sm text-destructive">{errors.branchName}</p>
@@ -319,25 +338,30 @@ export default function BranchesPage() {
                 placeholder="Full address of the branch..."
                 rows={3}
                 value={form.branchAddress}
-                onChange={(e) => setForm({ ...form, branchAddress: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, branchAddress: e.target.value })
+                }
               />
               {errors.branchAddress && (
-                <p className="text-sm text-destructive">{errors.branchAddress}</p>
+                <p className="text-sm text-destructive">
+                  {errors.branchAddress}
+                </p>
               )}
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setDialogOpen(false);
-              setForm(emptyForm);
-              setErrors({});
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDialogOpen(false);
+                setForm(emptyForm);
+                setErrors({});
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              Add Branch
-            </Button>
+            <Button onClick={handleSubmit}>Add Branch</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -353,7 +377,9 @@ export default function BranchesPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Address</p>
-                <p className="text-muted-foreground">{viewBranch.branchAddress}</p>
+                <p className="text-muted-foreground">
+                  {viewBranch.branchAddress}
+                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Created By</p>
