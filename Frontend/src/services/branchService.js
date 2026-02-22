@@ -12,7 +12,7 @@ export const getBranches = () => {
   });
 };
 
-export const updateBranch = (data, id) => {
+export const updateBranch = (id, data) => {
   return axios.put(`http://localhost:3000/branch/update/${id}`, data, {
     withCredentials: true,
   });

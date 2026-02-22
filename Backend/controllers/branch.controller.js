@@ -64,7 +64,8 @@ const deleteBranch = async (req, res) => {
 const updateBranch = async (req, res) => {
   try {
      const {branchName, branchAddress} = req.body;
-    let branch = await branchModel.findOneAndUpdate({_id: req.params.id}, {branchName, branchAddress})
+    let updateBranch = await branchModel.findOneAndUpdate({_id: req.params.id}, {branchName, branchAddress})
+    let branch = await branchModel.findById(req.params.id)
     res.status(200).json({
       message: "Branch Updated Successfully",
       branch

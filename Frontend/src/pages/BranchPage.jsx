@@ -54,6 +54,7 @@ export default function BranchesPage() {
   const [viewMode, setViewMode] = useState(isStudent ? "card" : "table");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewBranch, setViewBranch] = useState(null);
+  const [editingBranch, setEditingBranch] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
@@ -65,14 +66,15 @@ export default function BranchesPage() {
     );
   });
 
+  // Initial data fetch
   useEffect(() => {
     fetchBranches();
-  }, [branches]);
+  }, []);
 
   const fetchBranches = async () => {
     try {
       const res = await getBranches();
-      setBranches(res.data.branch);
+      setBranches(res.data.branch || res.data); // Handle different response structures
     } catch (error) {
       toast.error("Failed to fetch branches");
     }
@@ -83,15 +85,13 @@ export default function BranchesPage() {
 
     if (!form.branchName.trim() || form.branchName.trim().length < 3) {
       newErrors.branchName = "Branch name must be at least 3 characters";
-    }
-    if (form.branchName.trim().length > 100) {
+    } else if (form.branchName.trim().length > 100) {
       newErrors.branchName = "Branch name must be under 100 characters";
     }
 
     if (!form.branchAddress.trim() || form.branchAddress.trim().length < 5) {
       newErrors.branchAddress = "Branch address must be at least 5 characters";
-    }
-    if (form.branchAddress.trim().length > 200) {
+    } else if (form.branchAddress.trim().length > 200) {
       newErrors.branchAddress = "Branch address must be under 200 characters";
     }
 
@@ -99,31 +99,113 @@ export default function BranchesPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleAddBranch = async () => {
     if (!validateForm()) return;
+    
     try {
       const res = await createBranches({
         branchName: form.branchName.trim(),
         branchAddress: form.branchAddress.trim(),
       });
-      setBranches((prev) => [res.data, ...prev]);
+            
+      // ✅ FIX: Response structure check karo
+      const newBranch = res.data.branch || res.data;
+      
+      // Naya branch add karo
+      setBranches(prevBranches => [newBranch, ...prevBranches]);
+      
+      // Reset form
       setForm(emptyForm);
       setErrors({});
       setDialogOpen(false);
       toast.success("Branch added successfully!");
+      
     } catch (error) {
-      console.log(error.message);
+      console.error("Add error:", error);
       toast.error("Failed to add branch");
+    }
+  };
+
+  const handleUpdateBranch = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      
+      const res = await updateBranch(editingBranch._id, {
+        branchName: form.branchName.trim(),
+        branchAddress: form.branchAddress.trim(),
+      });
+      
+      
+      // ✅ FIX: Response se updated branch lo
+      const updatedBranch = res.data.branch || res.data;
+      
+      // ✅ FIX: State update sahi tarike se karo
+      setBranches(prevBranches => {
+        const newBranches = prevBranches.map(branch => {
+          if (branch._id === editingBranch._id) {
+            return updatedBranch; // Purani branch ko updated branch se replace karo
+          }
+          return branch;
+        });
+        return newBranches;
+      });
+      
+      // Reset and close
+      setForm(emptyForm);
+      setEditingBranch(null);
+      setErrors({});
+      setDialogOpen(false);
+      toast.success("Branch updated successfully!");
+      
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update branch");
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteBranch(id);
-      setBranches(prev => prev.filter(b => b._id !== id));
-      toast.success("Branch deleted");
+      
+      // ✅ FIX: Branch ko state se hatao
+      setBranches(prevBranches => prevBranches.filter(b => b._id !== id));
+      
+      toast.success("Branch deleted successfully!");
     } catch (error) {
-      toast.success("Could not delete branch");
+      console.error("Delete error:", error);
+      toast.error("Could not delete branch");
+    }
+  };
+
+  const handleEditClick = (branch) => {
+    setEditingBranch(branch);
+    setForm({
+      branchName: branch.branchName,
+      branchAddress: branch.branchAddress,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleAddClick = () => {
+    setEditingBranch(null);
+    setForm(emptyForm);
+    setErrors({});
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditingBranch(null);
+    setForm(emptyForm);
+    setErrors({});
+  };
+
+  const handleSubmit = () => {
+    if (editingBranch) {
+      handleUpdateBranch();
+    } else {
+      handleAddBranch();
     }
   };
 
@@ -139,7 +221,7 @@ export default function BranchesPage() {
             </p>
           </div>
           {!isStudent && (
-            <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Button onClick={handleAddClick} className="gap-2">
               <PlusCircle className="h-4 w-4" /> Add Branch
             </Button>
           )}
@@ -201,7 +283,7 @@ export default function BranchesPage() {
               </TableHeader>
               <TableBody>
                 {filteredBranches.map((branch) => (
-                  <TableRow key={branch.id} className="hover:bg-muted/30">
+                  <TableRow key={branch._id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">
                       {branch.branchName}
                     </TableCell>
@@ -227,6 +309,7 @@ export default function BranchesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              onClick={() => handleEditClick(branch)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -262,7 +345,7 @@ export default function BranchesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredBranches.map((branch) => (
               <Card
-                key={branch.id}
+                key={branch._id}
                 className="p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -290,7 +373,12 @@ export default function BranchesPage() {
                     <Eye className="h-3.5 w-3.5 mr-1" /> View
                   </Button>
                   {!isStudent && (
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleEditClick(branch)}
+                    >
                       <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                     </Button>
                   )}
@@ -306,13 +394,15 @@ export default function BranchesPage() {
         )}
       </div>
 
-      {/* Add Branch Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add/Edit Branch Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Branch</DialogTitle>
+            <DialogTitle>{editingBranch ? "Edit Branch" : "Add New Branch"}</DialogTitle>
             <DialogDescription>
-              Enter the name and address of the new branch.
+              {editingBranch 
+                ? "Update the branch information below." 
+                : "Enter the name and address of the new branch."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -353,15 +443,13 @@ export default function BranchesPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setForm(emptyForm);
-                setErrors({});
-              }}
+              onClick={handleDialogClose}
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>Add Branch</Button>
+            <Button onClick={handleSubmit}>
+              {editingBranch ? "Update Branch" : "Add Branch"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
