@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui/card";
@@ -34,6 +34,8 @@ import {
   Phone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getBranches } from "../services/branchService";
+import { createAdmin } from "../services/adminService";
 
 const mockBranchAdmins = [
   {
@@ -80,7 +82,8 @@ const mockBranchAdmins = [
 
 const emptyForm = {
   branch: "",
-  fullName: "",
+  firstname: "",
+  lastname: "",
   email: "",
   mobile: "",
 };
@@ -96,29 +99,43 @@ export default function BranchAdminsPage() {
   const [viewAdmin, setViewAdmin] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
+  const [branches, setBranches] = useState([]);
+
+  useEffect(() => {
+    fetchBranch();
+  }, []);
+
+  const fetchBranch = async () => {
+    let res = await getBranches();
+    setBranches(res.data.branch);
+  };
 
   const filteredAdmins = admins.filter(
     (a) =>
       a.branch.toLowerCase().includes(search.toLowerCase()) ||
       a.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      a.email.toLowerCase().includes(search.toLowerCase())
+      a.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!form.branch.trim() || form.branch.trim().length < 2) {
-      newErrors.branch = "Branch name must be at least 2 characters";
-    }
-    if (form.branch.trim().length > 80) {
-      newErrors.branch = "Branch name must be under 80 characters";
+    if (!form.branch) {
+      newErrors.branch = "Please select a branch";
     }
 
-    if (!form.fullName.trim() || form.fullName.trim().length < 3) {
-      newErrors.fullName = "Full name must be at least 3 characters";
+    if (!form.firstname.trim() || form.firstname.trim().length < 2) {
+      newErrors.firstname = "First name must be at least 2 characters";
     }
-    if (form.fullName.trim().length > 100) {
-      newErrors.fullName = "Full name must be under 100 characters";
+    if (form.firstname.trim().length > 60) {
+      newErrors.firstname = "First name is too long";
+    }
+
+    if (!form.lastname.trim() || form.lastname.trim().length < 2) {
+      newErrors.lastname = "Last name must be at least 2 characters";
+    }
+    if (form.lastname.trim().length > 60) {
+      newErrors.lastname = "Last name is too long";
     }
 
     if (!form.email.trim()) {
@@ -137,19 +154,29 @@ export default function BranchAdminsPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    const newAdmin = {
-      id: String(admins.length + 1),
-      branch: form.branch.trim(),
-      fullName: form.fullName.trim(),
+    const adminData = {
+      branchId: form.branch,
+      fullname: {
+        firstname: form.firstname.trim(),
+        lastname: form.lastname.trim(),
+      },
       email: form.email.trim(),
       mobile: form.mobile.trim(),
-      createdBy: user?.name || "Current Admin",
+
     };
 
-    setAdmins([newAdmin, ...admins]);
+    console.log("Sending data:", adminData);
+
+    let res = await createAdmin(adminData);
+
+     console.log("Response:", res.data); 
+     
+    const newAdmin = res.data || res.data;
+
+    setAdmins((prevAdmin) => [newAdmin, ...prevAdmin]);
     setForm(emptyForm);
     setErrors({});
     setDialogOpen(false);
@@ -167,7 +194,9 @@ export default function BranchAdminsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Branch Admins</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Branch Admins
+            </h1>
             <p className="text-muted-foreground">
               {isStudent
                 ? "View branch administrators"
@@ -199,7 +228,11 @@ export default function BranchAdminsPage() {
                 variant={viewMode === "table" ? "default" : "ghost"}
                 size="icon"
                 onClick={() => setViewMode("table")}
-                className={viewMode === "table" ? "bg-primary text-primary-foreground rounded-none" : "rounded-none"}
+                className={
+                  viewMode === "table"
+                    ? "bg-primary text-primary-foreground rounded-none"
+                    : "rounded-none"
+                }
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -207,7 +240,11 @@ export default function BranchAdminsPage() {
                 variant={viewMode === "card" ? "default" : "ghost"}
                 size="icon"
                 onClick={() => setViewMode("card")}
-                className={viewMode === "card" ? "bg-primary text-primary-foreground rounded-none" : "rounded-none"}
+                className={
+                  viewMode === "card"
+                    ? "bg-primary text-primary-foreground rounded-none"
+                    : "rounded-none"
+                }
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
@@ -231,10 +268,16 @@ export default function BranchAdminsPage() {
               <TableBody>
                 {filteredAdmins.map((admin) => (
                   <TableRow key={admin.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">{admin.branch}</TableCell>
+                    <TableCell className="font-medium">
+                      {admin.branch}
+                    </TableCell>
                     <TableCell>{admin.fullName}</TableCell>
-                    <TableCell className="text-muted-foreground">{admin.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{admin.mobile}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {admin.email}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {admin.mobile}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
@@ -247,7 +290,11 @@ export default function BranchAdminsPage() {
                         </Button>
                         {!isStudent && (
                           <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
@@ -266,7 +313,10 @@ export default function BranchAdminsPage() {
                 ))}
                 {filteredAdmins.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-10 text-muted-foreground"
+                    >
                       No branch admins found
                     </TableCell>
                   </TableRow>
@@ -278,14 +328,19 @@ export default function BranchAdminsPage() {
           /* Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAdmins.map((admin) => (
-              <Card key={admin.id} className="p-5 hover:shadow-md transition-shadow">
+              <Card
+                key={admin.id}
+                className="p-5 hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <UserCog className="h-5 w-5 text-primary" />
                   </div>
                 </div>
                 <h3 className="font-semibold text-lg mb-1">{admin.fullName}</h3>
-                <p className="text-sm font-medium text-primary mb-1">{admin.branch}</p>
+                <p className="text-sm font-medium text-primary mb-1">
+                  {admin.branch}
+                </p>
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-2">
                     <Mail className="h-3.5 w-3.5" />
@@ -332,28 +387,61 @@ export default function BranchAdminsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Branch Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="branch">Branch *</Label>
-              <Input
+              <select
                 id="branch"
-                placeholder="e.g. Engineering"
                 value={form.branch}
                 onChange={(e) => setForm({ ...form, branch: e.target.value })}
-              />
-              {errors.branch && <p className="text-sm text-destructive">{errors.branch}</p>}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">-- Select Branch --</option>
+                {branches.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.branchName}
+                  </option>
+                ))}
+              </select>
+              {errors.branch && (
+                <p className="text-sm text-destructive">{errors.branch}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name *</Label>
-              <Input
-                id="fullName"
-                placeholder="e.g. Dr. Rajesh Kumar"
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              />
-              {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+            {/* First & Last Name */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstname">First Name *</Label>
+                <Input
+                  id="firstname"
+                  placeholder="e.g. Rajesh"
+                  value={form.firstname}
+                  onChange={(e) =>
+                    setForm({ ...form, firstname: e.target.value })
+                  }
+                />
+                {errors.firstname && (
+                  <p className="text-sm text-destructive">{errors.firstname}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lastname">Last Name *</Label>
+                <Input
+                  id="lastname"
+                  placeholder="e.g. Mehta"
+                  value={form.lastname}
+                  onChange={(e) =>
+                    setForm({ ...form, lastname: e.target.value })
+                  }
+                />
+                {errors.lastname && (
+                  <p className="text-sm text-destructive">{errors.lastname}</p>
+                )}
+              </div>
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -363,9 +451,12 @@ export default function BranchAdminsPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
-              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
             </div>
 
+            {/* Mobile */}
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number *</Label>
               <Input
@@ -374,7 +465,9 @@ export default function BranchAdminsPage() {
                 value={form.mobile}
                 onChange={(e) => setForm({ ...form, mobile: e.target.value })}
               />
-              {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
+              {errors.mobile && (
+                <p className="text-sm text-destructive">{errors.mobile}</p>
+              )}
             </div>
           </div>
 

@@ -8,7 +8,7 @@ const createAdmin = async (req, res) => {
     const auth = await authModel.create({
       fullname: {
         firstname: fullname.firstname,
-        lastname: firstname.lastname,
+        lastname: fullname.lastname,
       },
       email,
       role,
@@ -27,10 +27,12 @@ const createAdmin = async (req, res) => {
       userId: auth._id,
       fullname: {
         firstname: fullname.firstname,
-        lastname: firstname.lastname,
+        lastname: fullname.lastname,
       },
       email,
       mobile,
+      createdBy: req.user._id,
+      updatedBy: req.user._id,
     });
 
     return res.status(201).json({
