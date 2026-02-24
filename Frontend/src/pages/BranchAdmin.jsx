@@ -22,6 +22,13 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
   UserCog,
   PlusCircle,
   Search,
@@ -32,53 +39,11 @@ import {
   List,
   Mail,
   Phone,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBranches } from "../services/branchService";
-import { createAdmin } from "../services/adminService";
-
-const mockBranchAdmins = [
-  {
-    id: "1",
-    branch: "Engineering",
-    fullName: "Prof. Rajesh Mehta",
-    email: "rajesh.mehta@college.edu",
-    mobile: "+91 98765 43210",
-    createdBy: "Admin Superuser",
-  },
-  {
-    id: "2",
-    branch: "Science",
-    fullName: "Dr. Sunita Verma",
-    email: "sunita.verma@college.edu",
-    mobile: "+91 87654 32109",
-    createdBy: "Admin Superuser",
-  },
-  {
-    id: "3",
-    branch: "Arts & Humanities",
-    fullName: "Prof. Anjali Desai",
-    email: "anjali.desai@college.edu",
-    mobile: "+91 76543 21098",
-    createdBy: "Admin Superuser",
-  },
-  {
-    id: "4",
-    branch: "Commerce & Management",
-    fullName: "Dr. Manoj Kapoor",
-    email: "manoj.kapoor@college.edu",
-    mobile: "+91 65432 10987",
-    createdBy: "Admin Superuser",
-  },
-  {
-    id: "5",
-    branch: "Law",
-    fullName: "Adv. Priya Sharma",
-    email: "priya.sharma@college.edu",
-    mobile: "+91 54321 09876",
-    createdBy: "Admin Superuser",
-  },
-];
+import { createAdmin, getAdminData } from "../services/adminService";
 
 const emptyForm = {
   branch: "",
@@ -86,13 +51,14 @@ const emptyForm = {
   lastname: "",
   email: "",
   mobile: "",
+  role: "branch_admin", // Default role
 };
 
 export default function BranchAdminsPage() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
 
-  const [admins, setAdmins] = useState(mockBranchAdmins);
+  const [admins, setAdmins] = useState([]);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState(isStudent ? "card" : "table");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -100,6 +66,30 @@ export default function BranchAdminsPage() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState("all");
+
+  // Role options for dropdown
+  const roleOptions = [
+    { value: "super_admin", label: "Super Admin" },
+    { value: "admin", label: "Branch Admin" },
+    { value: "hod", label: "HOD" },
+  ];
+
+  const filteredAdmins = (admins || []).filter((a) => {
+    const branch = a?.branch || "";
+    const fullName =
+      a?.fullName ||
+      `${a?.fullname?.firstname || ""} ${a?.fullname?.lastname || ""}`;
+    const email = a?.email || "";
+    const role = a?.role || "";
+
+    return (
+      branch.toLowerCase().includes(search.toLowerCase()) ||
+      fullName.toLowerCase().includes(search.toLowerCase()) ||
+      email.toLowerCase().includes(search.toLowerCase()) ||
+      role.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   useEffect(() => {
     fetchBranch();
@@ -110,12 +100,19 @@ export default function BranchAdminsPage() {
     setBranches(res.data.branch);
   };
 
-  const filteredAdmins = admins.filter(
-    (a) =>
-      a.branch.toLowerCase().includes(search.toLowerCase()) ||
-      a.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      a.email.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    fetchAdmins(selectedBranch);
+  }, [selectedBranch]);
+
+  const fetchAdmins = async (branchId) => {
+    if ((branchId = "all")) {
+      const res = await getAdminData();
+      setAdmins(res?.data?.admin || []);
+    } else {
+      const res = await getAdminData(branchId);
+      setAdmins(res?.data?.admin || []);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -150,6 +147,10 @@ export default function BranchAdminsPage() {
       newErrors.mobile = "Enter a valid mobile number (10–15 digits)";
     }
 
+    if (!form.role) {
+      newErrors.role = "Please select a role";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -165,15 +166,15 @@ export default function BranchAdminsPage() {
       },
       email: form.email.trim(),
       mobile: form.mobile.trim(),
-
+      role: form.role, // Include role in the data
     };
 
     console.log("Sending data:", adminData);
 
     let res = await createAdmin(adminData);
 
-     console.log("Response:", res.data); 
-     
+    console.log("Response:", res.data);
+
     const newAdmin = res.data || res.data;
 
     setAdmins((prevAdmin) => [newAdmin, ...prevAdmin]);
@@ -210,19 +211,38 @@ export default function BranchAdminsPage() {
           )}
         </div>
 
-        {/* Search & View Toggle */}
+        {/* Search & Filter */}
         <Card className="p-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by branch, name or email..."
+                placeholder="Search by branch, name, email or role..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
 
+            {/* Fixed Select component - No empty string value */}
+            <Select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Branches</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b._id} value={b._id}>
+                    {b.branchName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* View Toggle */}
             <div className="flex border rounded-lg overflow-hidden shrink-0">
               <Button
                 variant={viewMode === "table" ? "default" : "ghost"}
@@ -262,21 +282,28 @@ export default function BranchAdminsPage() {
                   <TableHead>Full Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Mobile</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAdmins.map((admin) => (
-                  <TableRow key={admin.id} className="hover:bg-muted/30">
+                  <TableRow key={admin._id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">
-                      {admin.branch}
+                      {admin.branchId.branchName}
                     </TableCell>
-                    <TableCell>{admin.fullName}</TableCell>
+                    <TableCell>{admin.fullname.firstname}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {admin.email}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {admin.mobile}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                        <Shield className="h-3 w-3 mr-1" />
+                        {admin.userId.role || "Branch Admin"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -314,7 +341,7 @@ export default function BranchAdminsPage() {
                 {filteredAdmins.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center py-10 text-muted-foreground"
                     >
                       No branch admins found
@@ -336,6 +363,10 @@ export default function BranchAdminsPage() {
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <UserCog className="h-5 w-5 text-primary" />
                   </div>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    <Shield className="h-3 w-3 mr-1" />
+                    {admin.role || "Branch Admin"}
+                  </span>
                 </div>
                 <h3 className="font-semibold text-lg mb-1">{admin.fullName}</h3>
                 <p className="text-sm font-medium text-primary mb-1">
@@ -405,6 +436,27 @@ export default function BranchAdminsPage() {
               </select>
               {errors.branch && (
                 <p className="text-sm text-destructive">{errors.branch}</p>
+              )}
+            </div>
+
+            {/* Role Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="role">Role *</Label>
+              <select
+                id="role"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">-- Select Role --</option>
+                {roleOptions.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+              {errors.role && (
+                <p className="text-sm text-destructive">{errors.role}</p>
               )}
             </div>
 
@@ -499,6 +551,15 @@ export default function BranchAdminsPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Branch</p>
                 <p className="text-muted-foreground">{viewAdmin.branch}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Role</p>
+                <p className="text-muted-foreground">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    <Shield className="h-3 w-3 mr-1" />
+                    {viewAdmin.role || "Branch Admin"}
+                  </span>
+                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Email</p>

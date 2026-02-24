@@ -4,15 +4,15 @@ const branchModel = require("../models/branch.model");
 
 const createAdmin = async (req, res) => {
   try {
-    let { branchId, fullname, email, mobile, role } = req.body;
-    const auth = await authModel.create({
-      fullname: {
-        firstname: fullname.firstname,
-        lastname: fullname.lastname,
-      },
-      email,
-      role,
-    });
+    let { branchId, fullname, email, mobile, role, createdBy, updatedBy } =
+      req.body;
+
+    if (!branchId || !fullname || !email || !mobile || !role || createBy) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field",
+      });
+    }
 
     const branch = await branchModel.findById(branchId);
     if (!branch) {
@@ -22,39 +22,79 @@ const createAdmin = async (req, res) => {
       });
     }
 
-    const admin = await adminModel.create({
-      branchId,
-      userId: auth._id,
+    const existingAuth = await authModel.findOne({ email });
+    if (existingAuth) {
+      return res.status(400).json({
+        success: false,
+        message: "User with this email already exists",
+      });
+    }
+
+    const auth = await authModel.create({
       fullname: {
         firstname: fullname.firstname,
         lastname: fullname.lastname,
       },
       email,
-      mobile,
-      createdBy: req.user._id,
-      updatedBy: req.user._id,
+      role,
     });
 
+    const admin = await adminModel
+      .create({
+        branchId,
+        userId: auth._id,
+        fullname: {
+          firstname: fullname.firstname,
+          lastname: fullname.lastname,
+        },
+        email,
+        mobile,
+        createdBy,
+        updatedBy,
+      })
+      .populate("branchId", "branchName")
+      .populate("userId", "email role")
+      .populate("createdBy", "fullname email")
+      .populate("updatedBy", "fullname email");
+
     return res.status(201).json({
-        success: true,
-        message: "Admin Created Successfully",
-        admin
-    })
+      success: true,
+      message: "Admin Created Successfully",
+      admin,
+    });
   } catch (error) {
     return res.status(500).json({
-        success: false,
-        message: error.message
-    })
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 const getData = async (req, res) => {
   try {
-    const admin = await adminModel.find({ branchId: req.qurey });
+    let { branchId } = req.query;
+
+    let admin;
+    if (branchId) {
+      admin = await adminModel
+        .findOne({ branchId })
+        .populate("branchId", "branchName")
+        .populate("userId", "email role")
+        .populate("createdBy", "fullname email")
+        .populate("updatedBy", "fullname email");
+    } else {
+      admin = await adminModel
+        .find()
+        .populate("branchId", "branchName")
+        .populate("userId", "email role")
+        .populate("createdBy", "fullname email")
+        .populate("updatedBy", "fullname email");
+    }
+
     return res.status(201).json({
       success: true,
       message: "Fetch Admin Data",
-      admin,
+      admin: admin || []
     });
   } catch (error) {
     return res.status(500).json({
@@ -119,4 +159,4 @@ const updateData = async (req, res) => {
   }
 };
 
-module.exports = {createAdmin, getData, getDataById, updateData };
+module.exports = { createAdmin, getData, getDataById, updateData };

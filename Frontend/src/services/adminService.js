@@ -5,3 +5,10 @@ export const createAdmin = (adminData) => {
     withCredentials: true,
   });
 };
+
+export const getAdminData = (branchId) => {
+  return axios.get("http://localhost:3000/admin/getData", {
+    params: branchId ? {branchId } : {},
+    withCredentials: true,
+  });
+};
