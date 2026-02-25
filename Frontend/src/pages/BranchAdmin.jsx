@@ -105,7 +105,7 @@ export default function BranchAdminsPage() {
   }, [selectedBranch]);
 
   const fetchAdmins = async (branchId) => {
-    if ((branchId = "all")) {
+    if (branchId === "all") {
       const res = await getAdminData();
       setAdmins(res?.data?.admin || []);
     } else {
@@ -155,6 +155,7 @@ export default function BranchAdminsPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -166,7 +167,7 @@ export default function BranchAdminsPage() {
       },
       email: form.email.trim(),
       mobile: form.mobile.trim(),
-      role: form.role, // Include role in the data
+      role: form.role,
     };
 
     console.log("Sending data:", adminData);
