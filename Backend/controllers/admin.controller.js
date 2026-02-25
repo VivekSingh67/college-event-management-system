@@ -4,10 +4,10 @@ const branchModel = require("../models/branch.model");
 
 const createAdmin = async (req, res) => {
   try {
-    let { branchId, fullname, email, mobile, role, createdBy, updatedBy } =
+    let { branchId, fullname, email, mobile, role } =
       req.body;
 
-    if (!branchId || !fullname || !email || !mobile || !role || createBy) {
+    if (!branchId || !fullname || !email || !mobile || !role) {
       return res.status(400).json({
         success: false,
         message: "Missing required field",
@@ -49,8 +49,8 @@ const createAdmin = async (req, res) => {
         },
         email,
         mobile,
-        createdBy,
-        updatedBy,
+        createdBy: req.user.id,
+        updatedBy: req.user.id,
       })
       .populate("branchId", "branchName")
       .populate("userId", "email role")
