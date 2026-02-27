@@ -18,3 +18,9 @@ export const updateAdmin = (id, adminData) => {
     withCredentials: true,
   });
 };
+
+export const deleteAdmin = (id) => {
+  return axios.delete(`http://localhost:3000/admin/delete/${id}`, {
+    withCredentials: true
+  })
+}

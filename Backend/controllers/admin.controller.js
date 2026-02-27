@@ -52,10 +52,6 @@ const createAdmin = async (req, res) => {
         createdBy: req.user.id,
         updatedBy: req.user.id,
       })
-      .populate("branchId", "branchName")
-      .populate("userId", "email role")
-      .populate("createdBy", "fullname email")
-      .populate("updatedBy", "fullname email");
 
     return res.status(201).json({
       success: true,
@@ -134,7 +130,7 @@ const updateData = async (req, res) => {
       },
     );
     const admin = await adminModel.findOneAndUpdate(
-      { userId: req.body.id },
+      { userId: req.params.id },
       {
         branchId,
         fullname: {

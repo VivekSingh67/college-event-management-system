@@ -43,7 +43,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBranches } from "../services/branchService";
-import { createAdmin, getAdminData } from "../services/adminService";
+import {
+  createAdmin,
+  getAdminData,
+  updateAdmin,
+  deleteAdmin
+} from "../services/adminService";
 
 const emptyForm = {
   branch: "",
@@ -51,7 +56,7 @@ const emptyForm = {
   lastname: "",
   email: "",
   mobile: "",
-  role: "branch_admin", // Default role
+  role: "admin",
 };
 
 export default function BranchAdminsPage() {
@@ -67,6 +72,16 @@ export default function BranchAdminsPage() {
   const [errors, setErrors] = useState({});
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("all");
+  const [editAdmin, setEditAdmin] = useState(null);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    branch: "",
+    fullname: { firstname: "", lastname: "" },
+    email: "",
+    mobile: "",
+    role: "admin",
+  });
+  const [editErrors, setEditErrors] = useState({});
 
   // Role options for dropdown
   const roleOptions = [
@@ -155,7 +170,6 @@ export default function BranchAdminsPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -170,12 +184,7 @@ export default function BranchAdminsPage() {
       role: form.role,
     };
 
-    console.log("Sending data:", adminData);
-
     let res = await createAdmin(adminData);
-
-    console.log("Response:", res.data);
-
     const newAdmin = res.data || res.data;
 
     setAdmins((prevAdmin) => [newAdmin, ...prevAdmin]);
@@ -185,8 +194,75 @@ export default function BranchAdminsPage() {
     toast.success("Branch Admin added successfully!");
   };
 
-  const handleDelete = (id) => {
-    setAdmins(admins.filter((a) => a.id !== id));
+  const handleEditOpen = async (admin) => {
+    setEditAdmin(admin);
+    setEditForm({
+      id: admin.userId || "",
+      branch: admin.branchId?._id || "",
+      fullname: {
+        firstname: admin.fullname?.firstname || "",
+        lastname: admin.fullname?.lastname || "",
+      },
+      email: admin.email || "",
+      mobile: admin.mobile || "",
+      role: admin.userId?.role || "admin",
+    });
+
+    setEditErrors({});
+  };
+
+  const handleEditSubmit = async (adminId) => {
+    const updatedData = {
+      branchId: editForm.branch,
+      fullname: {
+        firstname: editForm.fullname?.firstname || "",
+        lastname: editForm.fullname?.lastname || "",
+      },
+      email: editForm.email || "",
+      mobile: editForm.mobile || "",
+      role: editForm.role,
+    };
+
+    try {
+      const res = await updateAdmin(adminId, updatedData);
+
+      setAdmins((prev) =>
+        prev.map((a) =>
+          a._id == adminId // ✅ ab dono string hain
+            ? {
+                ...a,
+                branchId:
+                  branches.find((b) => b._id === editForm.branch) || a.branchId,
+                fullname: {
+                  firstname: editForm.fullname.firstname,
+                  lastname: editForm.fullname.lastname,
+                },
+                email: editForm.email,
+                mobile: editForm.mobile,
+                userId: { ...a.userId, role: editForm.role },
+              }
+            : a,
+        ),
+      );
+
+      setEditAdmin(null);
+      setEditForm({
+        id: "",
+        branch: "",
+        fullname: { firstname: "", lastname: "" },
+        email: "",
+        mobile: "",
+        role: "admin",
+      });
+      toast.success("Branch Admin updated successfully!");
+    } catch (err) {
+      console.error("Update failed:", err);
+      toast.error("Failed to update admin");
+    }
+  };
+
+  const handleDelete = async(id) => {
+    const res = await deleteAdmin(id)
     toast.success("Branch Admin removed");
   };
 
@@ -322,6 +398,7 @@ export default function BranchAdminsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              onClick={() => handleEditOpen(admin)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -329,7 +406,7 @@ export default function BranchAdminsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(admin.id)}
+                              onClick={() => handleDelete(admin.userId._id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -393,7 +470,12 @@ export default function BranchAdminsPage() {
                     <Eye className="h-3.5 w-3.5 mr-1" /> View
                   </Button>
                   {!isStudent && (
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleEditOpen(admin)}
+                    >
                       <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                     </Button>
                   )}
@@ -544,21 +626,25 @@ export default function BranchAdminsPage() {
       <Dialog open={!!viewAdmin} onOpenChange={() => setViewAdmin(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{viewAdmin?.fullName}</DialogTitle>
+            <DialogTitle>
+              {viewAdmin?.fullname?.firstname} {viewAdmin?.fullname?.lastname}
+            </DialogTitle>
             <DialogDescription>Branch Admin Information</DialogDescription>
           </DialogHeader>
           {viewAdmin && (
             <div className="space-y-4 py-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Branch</p>
-                <p className="text-muted-foreground">{viewAdmin.branch}</p>
+                <p className="text-muted-foreground">
+                  {viewAdmin.branchId?.branchName}
+                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Role</p>
                 <p className="text-muted-foreground">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                     <Shield className="h-3 w-3 mr-1" />
-                    {viewAdmin.role || "Branch Admin"}
+                    {viewAdmin.userId?.role || "Branch Admin"}
                   </span>
                 </p>
               </div>
@@ -570,15 +656,156 @@ export default function BranchAdminsPage() {
                 <p className="text-sm font-medium">Mobile</p>
                 <p className="text-muted-foreground">{viewAdmin.mobile}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Created By</p>
-                <p className="text-muted-foreground">{viewAdmin.createdBy}</p>
-              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewAdmin(null)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Branch Admin Dialog */}
+      <Dialog open={!!editAdmin} onOpenChange={() => setEditAdmin(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Branch Admin</DialogTitle>
+            <DialogDescription>
+              Update the administrator's details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Branch */}
+            <div className="space-y-2">
+              <Label>Branch *</Label>
+              <select
+                value={editForm.branch}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, branch: e.target.value })
+                }
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">-- Select Branch --</option>
+                {branches.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.branchName}
+                  </option>
+                ))}
+              </select>
+              {editErrors.branch && (
+                <p className="text-sm text-destructive">{editErrors.branch}</p>
+              )}
+            </div>
+
+            {/* Role */}
+            <div className="space-y-2">
+              <Label>Role *</Label>
+              <select
+                value={editForm.role}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, role: e.target.value })
+                }
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">-- Select Role --</option>
+                {roleOptions.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+              {editErrors.role && (
+                <p className="text-sm text-destructive">{editErrors.role}</p>
+              )}
+            </div>
+
+            {/* First & Last Name */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name *</Label>
+                <Input
+                  value={editForm.fullname?.firstname || ""}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      fullname: {
+                        ...editForm.fullname,
+                        firstname: e.target.value,
+                      },
+                    })
+                  }
+                />
+                {editErrors.fullname?.firstname && (
+                  <p className="text-sm text-destructive">
+                    {editErrors.fullname?.firstname}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name *</Label>
+                <Input
+                  value={editForm.fullname?.lastname || ""}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      fullname: {
+                        ...editForm.fullname,
+                        lastname: e.target.value,
+                      },
+                    })
+                  }
+                />
+                {editErrors.fullname?.lastname && (
+                  <p className="text-sm text-destructive">
+                    {editErrors.fullname?.lastname}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, email: e.target.value })
+                }
+              />
+              {editErrors.email && (
+                <p className="text-sm text-destructive">{editErrors.email}</p>
+              )}
+            </div>
+
+            {/* Mobile */}
+            <div className="space-y-2">
+              <Label>Mobile Number *</Label>
+              <Input
+                value={editForm.mobile}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, mobile: e.target.value })
+                }
+              />
+              {editErrors.mobile && (
+                <p className="text-sm text-destructive">{editErrors.mobile}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditAdmin(null);
+                setEditErrors({});
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => handleEditSubmit(editForm.id._id)}>
+              Update Admin
             </Button>
           </DialogFooter>
         </DialogContent>
