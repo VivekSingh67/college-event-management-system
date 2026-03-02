@@ -4,8 +4,7 @@ const branchModel = require("../models/branch.model");
 
 const createAdmin = async (req, res) => {
   try {
-    let { branchId, fullname, email, mobile, role } =
-      req.body;
+    let { branchId, fullname, email, mobile, role } = req.body;
 
     if (!branchId || !fullname || !email || !mobile || !role) {
       return res.status(400).json({
@@ -39,19 +38,18 @@ const createAdmin = async (req, res) => {
       role,
     });
 
-    const admin = await adminModel
-      .create({
-        branchId,
-        userId: auth._id,
-        fullname: {
-          firstname: fullname.firstname,
-          lastname: fullname.lastname,
-        },
-        email,
-        mobile,
-        createdBy: req.user.id,
-        updatedBy: req.user.id,
-      })
+    const admin = await adminModel.create({
+      branchId,
+      userId: auth._id,
+      fullname: {
+        firstname: fullname.firstname,
+        lastname: fullname.lastname,
+      },
+      email,
+      mobile,
+      createdBy: req.user.id,
+      updatedBy: req.user.id,
+    });
 
     return res.status(201).json({
       success: true,
@@ -73,40 +71,24 @@ const getData = async (req, res) => {
     let admin;
     if (branchId) {
       admin = await adminModel
-        .findOne({ branchId })
+        .find({ branchId })
         .populate("branchId", "branchName")
-        .populate("userId", "email role")
+        .populate("userId", "email role isActive")
         .populate("createdBy", "fullname email")
         .populate("updatedBy", "fullname email");
     } else {
       admin = await adminModel
         .find()
         .populate("branchId", "branchName")
-        .populate("userId", "email role")
+        .populate("userId", "email role isActive")
         .populate("createdBy", "fullname email")
         .populate("updatedBy", "fullname email");
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: "Fetch Admin Data",
-      admin: admin || []
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-const getDataById = async (req, res) => {
-  try {
-    const admin = await adminModel.findById(req.params.id);
-    return res.status(201).json({
-      success: true,
-      message: "Fetch Particular Admin Data",
-      admin,
+      admin: admin || [],
     });
   } catch (error) {
     return res.status(500).json({
@@ -155,4 +137,29 @@ const updateData = async (req, res) => {
   }
 };
 
-module.exports = { createAdmin, getData, getDataById, updateData };
+const updateAdminStatus = async (req, res) => {
+  try {
+    let { isActive } = req.body;
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        message: "Invalid Status Value",
+      });
+    }
+
+    const admin = await authModel.findByIdAndUpdate(req.params.id, {
+      isActive,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Status Update Successfully",
+      admin,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = { createAdmin, getData, updateData, updateAdminStatus };

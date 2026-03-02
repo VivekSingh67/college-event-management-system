@@ -19,8 +19,10 @@ export const updateAdmin = (id, adminData) => {
   });
 };
 
-export const deleteAdmin = (id) => {
-  return axios.delete(`http://localhost:3000/admin/delete/${id}`, {
-    withCredentials: true
-  })
-}
+export const updateStatus = (id, isActive) => {
+  return axios.patch(
+    `http://localhost:3000/admin/status/${id}`,
+    { isActive },
+    { withCredentials: true },
+  );
+};

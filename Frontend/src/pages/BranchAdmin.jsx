@@ -40,6 +40,8 @@ import {
   Mail,
   Phone,
   Shield,
+  BadgeCheck,
+  BadgeX,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBranches } from "../services/branchService";
@@ -47,7 +49,7 @@ import {
   createAdmin,
   getAdminData,
   updateAdmin,
-  deleteAdmin
+  updateStatus,
 } from "../services/adminService";
 
 const emptyForm = {
@@ -122,10 +124,10 @@ export default function BranchAdminsPage() {
   const fetchAdmins = async (branchId) => {
     if (branchId === "all") {
       const res = await getAdminData();
-      setAdmins(res?.data?.admin || []);
+      setAdmins(Array.isArray(res?.data?.admin) ? res.data.admin : []);
     } else {
       const res = await getAdminData(branchId);
-      setAdmins(res?.data?.admin || []);
+      setAdmins(Array.isArray(res?.data?.admin) ? res.data.admin : []);
     }
   };
 
@@ -184,10 +186,8 @@ export default function BranchAdminsPage() {
       role: form.role,
     };
 
-    let res = await createAdmin(adminData);
-    const newAdmin = res.data || res.data;
-
-    setAdmins((prevAdmin) => [newAdmin, ...prevAdmin]);
+    await createAdmin(adminData);
+    await fetchAdmins(selectedBranch); // ✅ fresh data fetch karo
     setForm(emptyForm);
     setErrors({});
     setDialogOpen(false);
@@ -261,9 +261,26 @@ export default function BranchAdminsPage() {
     }
   };
 
-  const handleDelete = async(id) => {
-    const res = await deleteAdmin(id)
-    toast.success("Branch Admin removed");
+  const handleStatusChange = async (id, currentStatus) => {
+    try {
+      await updateStatus(id, !currentStatus);
+
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin.userId._id === id
+            ? {
+                ...admin,
+                isActive: !currentStatus,
+                userId: { ...admin.userId, isActive: !currentStatus }, // ✅ userId ke andar bhi update karo
+              }
+            : admin,
+        ),
+      );
+
+      toast.success(!currentStatus ? "Admin Activated" : "Admin Deactivated");
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
   };
 
   return (
@@ -304,7 +321,7 @@ export default function BranchAdminsPage() {
             {/* Fixed Select component - No empty string value */}
             <Select
               value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
+              onValueChange={(val) => setSelectedBranch(val)}
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="All Branches" />
@@ -406,9 +423,23 @@ export default function BranchAdminsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(admin.userId._id)}
+                              onClick={() =>
+                                handleStatusChange(
+                                  admin.userId._id,
+                                  admin.isActive ?? admin.userId?.isActive,
+                                )
+                              }
+                              title={
+                                (admin.isActive ?? admin.userId?.isActive)
+                                  ? "Deactivate"
+                                  : "Activate"
+                              }
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {(admin.isActive ?? admin.userId?.isActive) ? (
+                                <BadgeCheck className="h-8 w-8 text-green-600" />
+                              ) : (
+                                <BadgeX className="h-8 w-8 text-red-600" />
+                              )}
                             </Button>
                           </>
                         )}
@@ -804,7 +835,7 @@ export default function BranchAdminsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={() => handleEditSubmit(editForm.id._id)}>
+            <Button onClick={() => handleEditSubmit(editAdmin._id)}>
               Update Admin
             </Button>
           </DialogFooter>
