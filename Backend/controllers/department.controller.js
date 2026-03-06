@@ -1,9 +1,10 @@
 const departmentModel = require("../models/department.model");
 const branchModel = require("../models/branch.model");
+const adminModel = require("../models/admin.model");
 
 const createDepartment = async (req, res) => {
   try {
-    let { branchId, departmentName } = req.body;
+    let { branchId, adminId, departmentName } = req.body;
 
     const branch = await branchModel.findById(branchId);
     if (!branch) {
@@ -13,8 +14,17 @@ const createDepartment = async (req, res) => {
       });
     }
 
+    const admin = await adminModel.findOne({userId: adminId});
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+    }
+
     const existingDepartment = await departmentModel.findOne({
       branchId,
+      adminId,
       departmentName,
     });
 
@@ -27,6 +37,7 @@ const createDepartment = async (req, res) => {
 
     const department = await departmentModel.create({
       branchId,
+      adminId,
       departmentName,
       createdBy: req.user.id,
       updatedBy: req.user.id,
@@ -76,7 +87,7 @@ const updateDepartment = async (req, res) => {
     let updateDepartmentData = await departmentModel.findOne({
       _id: req.params.id,
     });
-   return res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: updateDepartmentData,
     });
@@ -90,11 +101,13 @@ const updateDepartment = async (req, res) => {
 
 const deleteDepartment = async (req, res) => {
   try {
-    let department = await departmentModel.findOneAndDelete({_id: req.params.id})
+    let department = await departmentModel.findOneAndDelete({
+      _id: req.params.id,
+    });
     return res.status(201).json({
-        success: true,
-        data: department
-    })
+      success: true,
+      data: department,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -103,4 +116,9 @@ const deleteDepartment = async (req, res) => {
   }
 };
 
-module.exports = { createDepartment, getDepartmentData, updateDepartment, deleteDepartment };
+module.exports = {
+  createDepartment,
+  getDepartmentData,
+  updateDepartment,
+  deleteDepartment,
+};
