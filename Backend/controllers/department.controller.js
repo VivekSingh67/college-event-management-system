@@ -4,7 +4,7 @@ const adminModel = require("../models/admin.model");
 
 const createDepartment = async (req, res) => {
   try {
-    let { branchId, adminId, departmentName } = req.body;
+    let { branchId, adminId, departmentName, description } = req.body;
 
     const branch = await branchModel.findById(branchId);
     if (!branch) {
@@ -14,7 +14,7 @@ const createDepartment = async (req, res) => {
       });
     }
 
-    const admin = await adminModel.findOne({userId: adminId});
+    const admin = await adminModel.findOne({ userId: adminId });
     if (!admin) {
       return res.status(404).json({
         success: false,
@@ -26,6 +26,7 @@ const createDepartment = async (req, res) => {
       branchId,
       adminId,
       departmentName,
+      description
     });
 
     if (existingDepartment) {
@@ -39,6 +40,7 @@ const createDepartment = async (req, res) => {
       branchId,
       adminId,
       departmentName,
+      description,
       createdBy: req.user.id,
       updatedBy: req.user.id,
     });
@@ -58,11 +60,23 @@ const createDepartment = async (req, res) => {
 
 const getDepartmentData = async (req, res) => {
   try {
-    let { branchId } = req.params;
+    let { branchId } = req.query;
+
+    // Create query object
+    let query = {};
+
+    // If branchId is provided in query, add it to filter
+    if (branchId) {
+      query.branchId = branchId;
+    }
+
     const departments = await departmentModel
-      .find({ branchId })
-      .populate("branchId", "branchName");
-    return res.status(201).json({
+      .find(query)
+      .populate("branchId", "branchName")
+      .populate("adminId", "fullname")
+      .populate('createdBy', 'fullname email');
+
+    return res.status(200).json({
       success: true,
       count: departments.length,
       data: departments,
@@ -75,13 +89,14 @@ const getDepartmentData = async (req, res) => {
   }
 };
 
+
 const updateDepartment = async (req, res) => {
   try {
-    let { departmentName } = req.body;
+    let { departmentName, description } = req.body;
 
     let department = await departmentModel.findOneAndUpdate(
       { _id: req.params.id },
-      { departmentName },
+      { departmentName, description },
     );
 
     let updateDepartmentData = await departmentModel.findOne({

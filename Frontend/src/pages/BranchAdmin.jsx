@@ -58,7 +58,7 @@ const emptyForm = {
   lastname: "",
   email: "",
   mobile: "",
-  role: "admin",
+  // role removed - default will be "admin"
 };
 
 export default function BranchAdminsPage() {
@@ -81,16 +81,9 @@ export default function BranchAdminsPage() {
     fullname: { firstname: "", lastname: "" },
     email: "",
     mobile: "",
-    role: "admin",
+    // role removed - will be preserved from existing data
   });
   const [editErrors, setEditErrors] = useState({});
-
-  // Role options for dropdown
-  const roleOptions = [
-    { value: "super_admin", label: "Super Admin" },
-    { value: "admin", label: "Branch Admin" },
-    { value: "hod", label: "HOD" },
-  ];
 
   const filteredAdmins = (admins || []).filter((a) => {
     const branch = a?.branch || "";
@@ -164,10 +157,6 @@ export default function BranchAdminsPage() {
       newErrors.mobile = "Enter a valid mobile number (10–15 digits)";
     }
 
-    if (!form.role) {
-      newErrors.role = "Please select a role";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -183,11 +172,11 @@ export default function BranchAdminsPage() {
       },
       email: form.email.trim(),
       mobile: form.mobile.trim(),
-      role: form.role,
+      role: "admin", // Default role set to admin
     };
 
     await createAdmin(adminData);
-    await fetchAdmins(selectedBranch); // ✅ fresh data fetch karo
+    await fetchAdmins(selectedBranch);
     setForm(emptyForm);
     setErrors({});
     setDialogOpen(false);
@@ -205,7 +194,7 @@ export default function BranchAdminsPage() {
       },
       email: admin.email || "",
       mobile: admin.mobile || "",
-      role: admin.userId?.role || "admin",
+      // role field removed - we'll preserve the existing role
     });
 
     setEditErrors({});
@@ -220,7 +209,7 @@ export default function BranchAdminsPage() {
       },
       email: editForm.email || "",
       mobile: editForm.mobile || "",
-      role: editForm.role,
+      // Don't include role in update - preserve existing role
     };
 
     try {
@@ -228,7 +217,7 @@ export default function BranchAdminsPage() {
 
       setAdmins((prev) =>
         prev.map((a) =>
-          a._id == adminId // ✅ ab dono string hain
+          a._id == adminId
             ? {
                 ...a,
                 branchId:
@@ -239,7 +228,8 @@ export default function BranchAdminsPage() {
                 },
                 email: editForm.email,
                 mobile: editForm.mobile,
-                userId: { ...a.userId, role: editForm.role },
+                // Preserve existing userId and role
+                userId: a.userId,
               }
             : a,
         ),
@@ -252,7 +242,6 @@ export default function BranchAdminsPage() {
         fullname: { firstname: "", lastname: "" },
         email: "",
         mobile: "",
-        role: "admin",
       });
       toast.success("Branch Admin updated successfully!");
     } catch (err) {
@@ -271,7 +260,7 @@ export default function BranchAdminsPage() {
             ? {
                 ...admin,
                 isActive: !currentStatus,
-                userId: { ...admin.userId, isActive: !currentStatus }, // ✅ userId ke andar bhi update karo
+                userId: { ...admin.userId, isActive: !currentStatus },
               }
             : admin,
         ),
@@ -318,7 +307,6 @@ export default function BranchAdminsPage() {
               />
             </div>
 
-            {/* Fixed Select component - No empty string value */}
             <Select
               value={selectedBranch}
               onValueChange={(val) => setSelectedBranch(val)}
@@ -553,26 +541,7 @@ export default function BranchAdminsPage() {
               )}
             </div>
 
-            {/* Role Dropdown */}
-            <div className="space-y-2">
-              <Label htmlFor="role">Role *</Label>
-              <select
-                id="role"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">-- Select Role --</option>
-                {roleOptions.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-              {errors.role && (
-                <p className="text-sm text-destructive">{errors.role}</p>
-              )}
-            </div>
+            {/* Role is fixed - always admin, so dropdown removed */}
 
             {/* First & Last Name */}
             <div className="grid grid-cols-2 gap-4">
@@ -729,27 +698,7 @@ export default function BranchAdminsPage() {
               )}
             </div>
 
-            {/* Role */}
-            <div className="space-y-2">
-              <Label>Role *</Label>
-              <select
-                value={editForm.role}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, role: e.target.value })
-                }
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">-- Select Role --</option>
-                {roleOptions.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-              {editErrors.role && (
-                <p className="text-sm text-destructive">{editErrors.role}</p>
-              )}
-            </div>
+            {/* Role dropdown removed - role cannot be edited */}
 
             {/* First & Last Name */}
             <div className="grid grid-cols-2 gap-4">

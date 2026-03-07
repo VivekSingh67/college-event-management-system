@@ -9,10 +9,15 @@ const departmentSchema = mongoose.Schema(
     },
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      ref: "User",
       required: true,
     },
     departmentName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
       type: String,
       required: true,
       trim: true,

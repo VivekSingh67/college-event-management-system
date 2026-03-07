@@ -2,11 +2,19 @@ const mongoose = require('mongoose');
 
 const branchSchema = mongoose.Schema(
     {
+        collegeId: {
+            type: String,
+            required: true
+        },
         branchName: {
             type: String,
             required: true
         },
-        branchAddress: {
+        city: {
+            type: String,
+            required: true,
+        },
+        address: {
             type: String,
             required: true
         },

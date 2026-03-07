@@ -7,13 +7,6 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -40,71 +33,40 @@ import {
   List,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createDepartment } from "../services/departmentService";
+import { createDepartment, getDepartmentData, updateDepartment, deleteDepartment } from "../services/departmentService";
 import { getBranches } from "../services/branchService";
 import { getAdminData } from "../services/adminService";
 
-const mockDepartments = [
-  {
-    id: "1",
-    departmentName: "Computer Science & Engineering",
-    departmentDescription:
-      "Focuses on software development, AI, data science and systems",
-    branch: "CSE",
-    admin: "Prof. Rajesh Mehta",
-    createdBy: "Prof. Rajesh Mehta",
-  },
-  {
-    id: "2",
-    departmentName: "Electronics & Communication",
-    departmentDescription:
-      "VLSI, embedded systems, communication networks & signal processing",
-    branch: "ECE",
-    admin: "Dr. Sunita Verma",
-    createdBy: "Dr. Sunita Verma",
-  },
-  {
-    id: "3",
-    departmentName: "Mechanical Engineering",
-    departmentDescription:
-      "Thermodynamics, manufacturing, robotics and automobile engineering",
-    branch: "Mechanical",
-    admin: "Prof. Anjali Desai",
-    createdBy: "Prof. Anjali Desai",
-  },
-  {
-    id: "4",
-    departmentName: "Civil Engineering",
-    departmentDescription:
-      "Structural engineering, geotechnical, transportation & environmental",
-    branch: "Civil",
-    admin: "Dr. Manoj Kapoor",
-    createdBy: "Dr. Manoj Kapoor",
-  },
-  {
-    id: "5",
-    departmentName: "Information Technology",
-    departmentDescription:
-      "Web technologies, cloud computing, cybersecurity and databases",
-    branch: "IT",
-    admin: "Adv. Priya Sharma",
-    createdBy: "Adv. Priya Sharma",
-  },
-];
-
 const emptyForm = {
   departmentName: "",
-  departmentDescription: "",
+  description: "",
   branch: "",
   admin: "",
+};
+
+// Helper function to safely get admin name
+const getAdminName = (admin) => {
+  if (!admin || !admin.fullname) return 'N/A';
+  const firstName = admin.fullname.firstname || '';
+  const lastName = admin.fullname.lastname || '';
+  return `${firstName} ${lastName}`.trim() || 'N/A';
+};
+
+// Helper function to safely get created by name
+const getCreatedByName = (createdBy) => {
+  if (!createdBy || !createdBy.fullname) return 'N/A';
+  const firstName = createdBy.fullname.firstname || '';
+  const lastName = createdBy.fullname.lastname || '';
+  return `${firstName} ${lastName}`.trim() || 'N/A';
 };
 
 export default function DepartmentsPage() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
 
-  const [departments, setDepartments] = useState(mockDepartments);
+  const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("all");
   const [viewMode, setViewMode] = useState(isStudent ? "card" : "table");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -115,24 +77,18 @@ export default function DepartmentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
-  // Branch options
-  // const branchOptions = [
-  //   { value: "CSE", label: "Computer Science & Engineering" },
-  //   { value: "ECE", label: "Electronics & Communication Engineering" },
-  //   { value: "Mechanical", label: "Mechanical Engineering" },
-  //   { value: "Civil", label: "Civil Engineering" },
-  //   { value: "IT", label: "Information Technology" },
-  //   { value: "EEE", label: "Electrical & Electronics Engineering" },
-  //   { value: "AI", label: "Artificial Intelligence & Data Science" },
-  // ];
-
-  const filteredDepartments = departments.filter(
-    (d) =>
-      d.departmentName.toLowerCase().includes(search.toLowerCase()) ||
-      d.departmentDescription.toLowerCase().includes(search.toLowerCase()) ||
+  // Filter departments based on search and selected branch
+  const filteredDepartments = departments.filter((d) => {
+    const matchesSearch =
+      d.departmentName?.toLowerCase().includes(search.toLowerCase()) ||
+      d.description?.toLowerCase().includes(search.toLowerCase()) ||
       d.branch?.toLowerCase().includes(search.toLowerCase()) ||
-      d.admin?.toLowerCase().includes(search.toLowerCase()),
-  );
+      d.admin?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesBranch = selectedBranch === "all" || d.branchId?._id === selectedBranch;
+
+    return matchesSearch && matchesBranch;
+  });
 
   const validateForm = () => {
     const newErrors = {};
@@ -146,14 +102,14 @@ export default function DepartmentsPage() {
     }
 
     if (
-      !form.departmentDescription.trim() ||
-      form.departmentDescription.trim().length < 5
+      !form.description.trim() ||
+      form.description.trim().length < 5
     ) {
-      newErrors.departmentDescription =
+      newErrors.description =
         "Description must be at least 5 characters";
     }
-    if (form.departmentDescription.trim().length > 300) {
-      newErrors.departmentDescription =
+    if (form.description.trim().length > 300) {
+      newErrors.description =
         "Description must be under 300 characters";
     }
 
@@ -172,16 +128,37 @@ export default function DepartmentsPage() {
   useEffect(() => {
     fetchAdmin();
     fetchBranch();
+    fetchDepartment();
   }, []);
 
   const fetchBranch = async () => {
-    const res = await getBranches();
-    setBranchOptions(res.data.branch)
+    try {
+      const res = await getBranches();
+      setBranchOptions(res.data.branch);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      toast.error("Failed to load branches");
+    }
   };
 
   const fetchAdmin = async () => {
-    const res = await getAdminData();
-    setAdminOptions(res.data.admin);
+    try {
+      const res = await getAdminData();
+      setAdminOptions(res.data.admin);
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+      toast.error("Failed to load admins");
+    }
+  };
+
+  const fetchDepartment = async () => {
+    try {
+      const res = await getDepartmentData();
+      setDepartments(res.data.data);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      toast.error("Failed to load departments");
+    }
   };
 
   const handleSubmit = async () => {
@@ -189,57 +166,78 @@ export default function DepartmentsPage() {
 
     const newDepartment = {
       departmentName: form.departmentName.trim(),
-      departmentDescription: form.departmentDescription.trim(),
+      description: form.description.trim(),
       branchId: form.branch,
       adminId: form.admin,
     };
 
-console.log(newDepartment)
-    await createDepartment(newDepartment);
-    setDepartments([newDepartment, ...departments]);
-    setForm(emptyForm);
-    setErrors({});
-    setDialogOpen(false);
-    toast.success("Department added successfully!");
+    try {
+      await createDepartment(newDepartment);
+      await fetchDepartment(); // Refresh the entire list from server
+      setForm(emptyForm);
+      setErrors({});
+      setDialogOpen(false);
+      toast.success("Department added successfully!");
+    } catch (error) {
+      console.error("Create error:", error);
+      toast.error("Failed to add department. Please try again.");
+    }
   };
 
   const handleEditClick = (dept) => {
     setEditingDepartment(dept);
     setForm({
       departmentName: dept.departmentName,
-      departmentDescription: dept.departmentDescription,
-      branch: dept.branch,
-      admin: dept.admin,
+      description: dept.description,
+      branch: dept.branchId?._id || dept.branchId,
+      admin: dept.adminId?._id || dept.adminId,
     });
     setEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!validateForm()) return;
 
-    const updatedDepartments = departments.map((dept) =>
-      dept.id === editingDepartment.id
-        ? {
-            ...dept,
-            departmentName: form.departmentName.trim(),
-            departmentDescription: form.departmentDescription.trim(),
-            branch: form.branch,
-            admin: form.admin,
-          }
-        : dept,
-    );
+    try {
+      const updatedData = {
+        departmentName: form.departmentName.trim(),
+        description: form.description.trim(),
+        branchId: form.branch,
+        adminId: form.admin,
+      };
 
-    setDepartments(updatedDepartments);
-    setForm(emptyForm);
-    setErrors({});
-    setEditDialogOpen(false);
-    setEditingDepartment(null);
-    toast.success("Department updated successfully!");
+      // Call the API to update the department
+      await updateDepartment(editingDepartment._id, updatedData);
+
+      // Refresh the departments list from the server
+      await fetchDepartment();
+
+      // Reset form and close dialog
+      setForm(emptyForm);
+      setErrors({});
+      setEditDialogOpen(false);
+      setEditingDepartment(null);
+
+      toast.success("Department updated successfully!");
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update department. Please try again.");
+    }
   };
 
-  const handleDelete = (id) => {
-    setDepartments(departments.filter((d) => d.id !== id));
-    toast.success("Department deleted");
+  const handleDelete = async (dept) => {
+    if (!window.confirm("Are you sure you want to delete this department?")) {
+      return;
+    }
+    
+    try {
+      await deleteDepartment(dept._id);
+      await fetchDepartment(); // Refresh the list after deletion
+      toast.success("Department deleted successfully!");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete department. Please try again.");
+    }
   };
 
   return (
@@ -262,10 +260,10 @@ console.log(newDepartment)
           )}
         </div>
 
-        {/* Search & View Toggle */}
+        {/* Search & Branch Filter */}
         <Card className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
-            <div className="relative flex-1 w-full">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, description, branch or admin..."
@@ -275,6 +273,21 @@ console.log(newDepartment)
               />
             </div>
 
+            {/* Branch Filter Dropdown */}
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className="w-full sm:w-48 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="all">All Branches</option>
+              {branchOptions.map((branch) => (
+                <option key={branch._id} value={branch._id}>
+                  {branch.branchName}
+                </option>
+              ))}
+            </select>
+
+            {/* View Toggle */}
             <div className="flex border rounded-lg overflow-hidden shrink-0">
               <Button
                 variant={viewMode === "table" ? "default" : "ghost"}
@@ -302,6 +315,24 @@ console.log(newDepartment)
               </Button>
             </div>
           </div>
+
+          {/* Active Filter Indicator */}
+          {selectedBranch !== "all" && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Active filter:</span>
+              <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
+                {branchOptions.find(b => b._id === selectedBranch)?.branchName}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedBranch("all")}
+                className="h-6 px-2 text-xs"
+              >
+                Clear filter
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Table View */}
@@ -320,21 +351,23 @@ console.log(newDepartment)
               </TableHeader>
               <TableBody>
                 {filteredDepartments.map((dept) => (
-                  <TableRow key={dept.id} className="hover:bg-muted/30">
+                  <TableRow key={dept._id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">
                       {dept.departmentName}
                     </TableCell>
                     <TableCell>
                       <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
-                        {dept.branch}
+                        {dept.branchId?.branchName || 'N/A'}
                       </span>
                     </TableCell>
-                    <TableCell className="font-medium">{dept.admin}</TableCell>
+                    <TableCell className="font-medium">
+                      {getAdminName(dept.adminId)}
+                    </TableCell>
                     <TableCell className="text-muted-foreground max-w-xs truncate">
-                      {dept.departmentDescription}
+                      {dept.description}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {dept.createdBy}
+                      {getCreatedByName(dept.createdBy)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -360,7 +393,7 @@ console.log(newDepartment)
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(dept.id)}
+                              onClick={() => handleDelete(dept)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -388,7 +421,7 @@ console.log(newDepartment)
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredDepartments.map((dept) => (
               <Card
-                key={dept.id}
+                key={dept._id}
                 className="p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -396,26 +429,26 @@ console.log(newDepartment)
                     <Building2 className="h-5 w-5 text-primary" />
                   </div>
                   <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
-                    {dept.branch}
+                    {dept.branchId?.branchName || 'N/A'}
                   </span>
                 </div>
                 <h3 className="font-semibold text-lg mb-1">
                   {dept.departmentName}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                  {dept.departmentDescription}
+                  {dept.description}
                 </p>
                 <div className="space-y-1 mb-4">
                   <p className="text-xs text-muted-foreground">
                     Admin:{" "}
                     <span className="font-medium text-foreground">
-                      {dept.admin}
+                      {getAdminName(dept.adminId)}
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Created by:{" "}
                     <span className="font-medium text-foreground">
-                      {dept.createdBy}
+                      {getCreatedByName(dept.createdBy)}
                     </span>
                   </p>
                 </div>
@@ -480,21 +513,19 @@ console.log(newDepartment)
 
             <div className="space-y-2">
               <Label htmlFor="branch">Branch *</Label>
-              <Select
+              <select
+                id="branch"
                 value={form.branch}
-                onValueChange={(value) => setForm({ ...form, branch: value })}
+                onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branchOptions.map((option) => (
-                    <SelectItem key={option._id} value={option._id}>
-                      {option.branchName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select branch</option>
+                {branchOptions.map((option) => (
+                  <option key={option._id} value={option._id}>
+                    {option.branchName}
+                  </option>
+                ))}
+              </select>
               {errors.branch && (
                 <p className="text-sm text-destructive">{errors.branch}</p>
               )}
@@ -502,21 +533,19 @@ console.log(newDepartment)
 
             <div className="space-y-2">
               <Label htmlFor="admin">Department Admin *</Label>
-              <Select
+              <select
+                id="admin"
                 value={form.admin}
-                onValueChange={(value) => setForm({ ...form, admin: value })}
+                onChange={(e) => setForm({ ...form, admin: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select admin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {adminOptions.map((option) => (
-                    <SelectItem key={option._id} value={option.userId._id}>
-                      {option.fullname.firstname}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select admin</option>
+                {adminOptions.map((option) => (
+                  <option key={option._id} value={option.userId?._id}>
+                    {option.fullname?.firstname || ''} {option.fullname?.lastname || ''}
+                  </option>
+                ))}
+              </select>
               {errors.admin && (
                 <p className="text-sm text-destructive">{errors.admin}</p>
               )}
@@ -528,14 +557,14 @@ console.log(newDepartment)
                 id="department-desc"
                 placeholder="Brief description about the department..."
                 rows={4}
-                value={form.departmentDescription}
+                value={form.description}
                 onChange={(e) =>
-                  setForm({ ...form, departmentDescription: e.target.value })
+                  setForm({ ...form, description: e.target.value })
                 }
               />
-              {errors.departmentDescription && (
+              {errors.description && (
                 <p className="text-sm text-destructive">
-                  {errors.departmentDescription}
+                  {errors.description}
                 </p>
               )}
             </div>
@@ -586,21 +615,19 @@ console.log(newDepartment)
 
             <div className="space-y-2">
               <Label htmlFor="edit-branch">Branch *</Label>
-              <Select
+              <select
+                id="edit-branch"
                 value={form.branch}
-                onValueChange={(value) => setForm({ ...form, branch: value })}
+                onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branchOptions.map((option) => (
-                    <SelectItem key={option._id} value={option._id}>
-                      {option.branchName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select branch</option>
+                {branchOptions.map((option) => (
+                  <option key={option._id} value={option._id}>
+                    {option.branchName}
+                  </option>
+                ))}
+              </select>
               {errors.branch && (
                 <p className="text-sm text-destructive">{errors.branch}</p>
               )}
@@ -608,21 +635,19 @@ console.log(newDepartment)
 
             <div className="space-y-2">
               <Label htmlFor="edit-admin">Department Admin *</Label>
-              <Select
+              <select
+                id="edit-admin"
                 value={form.admin}
-                onValueChange={(value) => setForm({ ...form, admin: value })}
+                onChange={(e) => setForm({ ...form, admin: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select admin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {adminOptions.map((option) => (
-                     <SelectItem key={option._id} value={option.userId._id}>
-                      {option.fullname.firstname}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select admin</option>
+                {adminOptions.map((option) => (
+                  <option key={option._id} value={option.userId?._id}>
+                    {option.fullname?.firstname || ''} {option.fullname?.lastname || ''}
+                  </option>
+                ))}
+              </select>
               {errors.admin && (
                 <p className="text-sm text-destructive">{errors.admin}</p>
               )}
@@ -634,14 +659,14 @@ console.log(newDepartment)
                 id="edit-department-desc"
                 placeholder="Brief description about the department..."
                 rows={4}
-                value={form.departmentDescription}
+                value={form.description}
                 onChange={(e) =>
-                  setForm({ ...form, departmentDescription: e.target.value })
+                  setForm({ ...form, description: e.target.value })
                 }
               />
-              {errors.departmentDescription && (
+              {errors.description && (
                 <p className="text-sm text-destructive">
-                  {errors.departmentDescription}
+                  {errors.description}
                 </p>
               )}
             </div>
@@ -681,27 +706,27 @@ console.log(newDepartment)
                   <p className="text-sm font-medium">Branch</p>
                   <p className="text-muted-foreground">
                     <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs">
-                      {viewDepartment.branch}
+                      {viewDepartment.branchId?.branchName || 'N/A'}
                     </span>
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Admin</p>
                   <p className="text-muted-foreground font-medium">
-                    {viewDepartment.admin}
+                    {getAdminName(viewDepartment.adminId)}
                   </p>
                 </div>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Description</p>
                 <p className="text-muted-foreground">
-                  {viewDepartment.departmentDescription}
+                  {viewDepartment.description}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Created By</p>
                 <p className="text-muted-foreground">
-                  {viewDepartment.createdBy}
+                  {getCreatedByName(viewDepartment.createdBy)}
                 </p>
               </div>
             </div>
