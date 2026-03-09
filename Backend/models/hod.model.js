@@ -17,6 +17,11 @@ const hodSchema = mongoose.Schema(
       ref: "Department",
       required: true,
     },
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+    },
     fullname: {
       firstname: {
         type: String,

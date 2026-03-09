@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 
 const createHod = async (req, res) => {
   try {
-    let { userId, branchId, departmentId, fullname, email, mobile, password, role } =
+    let {branchId,adminId ,departmentId, fullname, email, mobile, password, role } =
       req.body;
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -29,6 +29,7 @@ const createHod = async (req, res) => {
 
     const existingHod = await hodModel.findOne({
       branchId,
+      adminId,
       departmentId,
     });
 
@@ -52,6 +53,7 @@ const createHod = async (req, res) => {
     const hod = await hodModel.create({
       userId: auth._id,  
       branchId,
+      adminId,
       departmentId,
       fullname,
       email,

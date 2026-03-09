@@ -86,20 +86,19 @@ export default function BranchAdminsPage() {
   const [editErrors, setEditErrors] = useState({});
 
   const filteredAdmins = (admins || []).filter((a) => {
-    const branch = a?.branch || "";
-    const fullName =
-      a?.fullName ||
-      `${a?.fullname?.firstname || ""} ${a?.fullname?.lastname || ""}`;
-    const email = a?.email || "";
-    const role = a?.role || "";
+  const branch = a?.branchId?.branchName || "";
+  const fullName = 
+    `${a?.fullname?.firstname || ""} ${a?.fullname?.lastname || ""}`.trim();
+  const email = a?.email || "";
+  const role = a?.userId?.role || "";
 
-    return (
-      branch.toLowerCase().includes(search.toLowerCase()) ||
-      fullName.toLowerCase().includes(search.toLowerCase()) ||
-      email.toLowerCase().includes(search.toLowerCase()) ||
-      role.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  return (
+    branch.toLowerCase().includes(search.toLowerCase()) ||
+    fullName.toLowerCase().includes(search.toLowerCase()) ||
+    email.toLowerCase().includes(search.toLowerCase()) ||
+    role.toLowerCase().includes(search.toLowerCase())
+  );
+});
 
   useEffect(() => {
     fetchBranch();
@@ -354,160 +353,164 @@ export default function BranchAdminsPage() {
           </div>
         </Card>
 
-        {/* Table View */}
-        {viewMode === "table" ? (
-          <Card className="overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Branch</TableHead>
-                  <TableHead>Full Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Mobile</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAdmins.map((admin) => (
-                  <TableRow key={admin._id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">
-                      {admin.branchId.branchName}
-                    </TableCell>
-                    <TableCell>{admin.fullname.firstname}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {admin.email}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {admin.mobile}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                        <Shield className="h-3 w-3 mr-1" />
-                        {admin.userId.role || "Branch Admin"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setViewAdmin(admin)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {!isStudent && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleEditOpen(admin)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() =>
-                                handleStatusChange(
-                                  admin.userId._id,
-                                  admin.isActive ?? admin.userId?.isActive,
-                                )
-                              }
-                              title={
-                                (admin.isActive ?? admin.userId?.isActive)
-                                  ? "Deactivate"
-                                  : "Activate"
-                              }
-                            >
-                              {(admin.isActive ?? admin.userId?.isActive) ? (
-                                <BadgeCheck className="h-8 w-8 text-green-600" />
-                              ) : (
-                                <BadgeX className="h-8 w-8 text-red-600" />
-                              )}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredAdmins.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-10 text-muted-foreground"
-                    >
-                      No branch admins found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        ) : (
-          /* Card View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredAdmins.map((admin) => (
-              <Card
-                key={admin.id}
-                className="p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <UserCog className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                    <Shield className="h-3 w-3 mr-1" />
-                    {admin.role || "Branch Admin"}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-lg mb-1">{admin.fullName}</h3>
-                <p className="text-sm font-medium text-primary mb-1">
-                  {admin.branch}
-                </p>
-                <div className="space-y-1 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5" />
-                    {admin.email}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5" />
-                    {admin.mobile}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setViewAdmin(admin)}
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1" /> View
-                  </Button>
-                  {!isStudent && (
+       {/* Table View */}
+{viewMode === "table" ? (
+  <Card className="overflow-hidden">
+    <Table>
+      <TableHeader>
+        <TableRow className="bg-muted/50">
+          <TableHead>Branch</TableHead>
+          <TableHead>Full Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Mobile</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredAdmins.map((admin) => (
+          <TableRow key={admin._id} className="hover:bg-muted/30">
+            <TableCell className="font-medium">
+              {admin.branchId?.branchName || "N/A"}
+            </TableCell>
+            <TableCell>
+              {admin.fullname?.firstname || ""} {admin.fullname?.lastname || ""}
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {admin.email || "N/A"}
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {admin.mobile || "N/A"}
+            </TableCell>
+            <TableCell>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                <Shield className="h-3 w-3 mr-1" />
+                {admin.userId?.role || "Branch Admin"}
+              </span>
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewAdmin(admin)}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                {!isStudent && (
+                  <>
                     <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={() => handleEditOpen(admin)}
                     >
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-            {filteredAdmins.length === 0 && (
-              <div className="col-span-full text-center py-16 text-muted-foreground">
-                No branch admins found
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() =>
+                        handleStatusChange(
+                          admin.userId?._id,
+                          admin.isActive ?? admin.userId?.isActive,
+                        )
+                      }
+                      title={
+                        (admin.isActive ?? admin.userId?.isActive)
+                          ? "Deactivate"
+                          : "Activate"
+                      }
+                    >
+                      {(admin.isActive ?? admin.userId?.isActive) ? (
+                        <BadgeCheck className="h-8 w-8 text-green-600" />
+                      ) : (
+                        <BadgeX className="h-8 w-8 text-red-600" />
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
-          </div>
+            </TableCell>
+          </TableRow>
+        ))}
+        {filteredAdmins.length === 0 && (
+          <TableRow>
+            <TableCell
+              colSpan={6}
+              className="text-center py-10 text-muted-foreground"
+            >
+              No branch admins found
+            </TableCell>
+          </TableRow>
         )}
+      </TableBody>
+    </Table>
+  </Card>
+) : (
+  /* Card View */
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {filteredAdmins.map((admin) => (
+      <Card
+        key={admin._id}
+        className="p-5 hover:shadow-md transition-shadow"
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <UserCog className="h-5 w-5 text-primary" />
+          </div>
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+            <Shield className="h-3 w-3 mr-1" />
+            {admin.userId?.role || "Branch Admin"}
+          </span>
+        </div>
+        <h3 className="font-semibold text-lg mb-1">
+          {admin.fullname?.firstname || ""} {admin.fullname?.lastname || ""}
+        </h3>
+        <p className="text-sm font-medium text-primary mb-1">
+          {admin.branchId?.branchName || "N/A"}
+        </p>
+        <div className="space-y-1 text-sm text-muted-foreground mb-4">
+          <div className="flex items-center gap-2">
+            <Mail className="h-3.5 w-3.5" />
+            {admin.email || "N/A"}
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone className="h-3.5 w-3.5" />
+            {admin.mobile || "N/A"}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={() => setViewAdmin(admin)}
+          >
+            <Eye className="h-3.5 w-3.5 mr-1" /> View
+          </Button>
+          {!isStudent && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={() => handleEditOpen(admin)}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+            </Button>
+          )}
+        </div>
+      </Card>
+    ))}
+    {filteredAdmins.length === 0 && (
+      <div className="col-span-full text-center py-16 text-muted-foreground">
+        No branch admins found
+      </div>
+    )}
+  </div>
+)}
       </div>
 
       {/* Add Branch Admin Dialog */}
