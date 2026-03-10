@@ -96,16 +96,42 @@ const getData = async (req, res) => {
       filter.adminId = adminId;
     }
 
-
-    const hod = await hodModel.find(filter)
+    const hods = await hodModel.find(filter)
       .populate('branchId', 'branchName')
       .populate('departmentId', 'departmentName')
       .populate('adminId', 'fullname email')
       .sort({ createdAt: -1 });
 
+    // For each HOD, get the isActive status from authModel
+    const hodsWithStatus = await Promise.all(
+      hods.map(async (hod) => {
+        try {
+          // Find the corresponding auth user
+          const authUser = await authModel.findById(hod.userId);
+          
+          // Convert to plain object and add isActive field
+          const hodObject = hod.toObject();
+          
+          return {
+            ...hodObject,
+            isActive: authUser ? authUser.isActive : true, // Default to true if auth user not found
+            // Also include auth user email if needed (though HOD already has email)
+            authEmail: authUser?.email || hod.email
+          };
+        } catch (err) {
+          console.error(`Error fetching auth for HOD ${hod._id}:`, err);
+          // If error, return original HOD with default isActive
+          return {
+            ...hod.toObject(),
+            isActive: true
+          };
+        }
+      })
+    );
+
     return res.status(200).json({
       success: true,
-      data: hod,
+      data: hodsWithStatus,
       filters: {              // Send back applied filters for reference
         branchId: branchId || null,
         departmentId: departmentId || null,
@@ -188,6 +214,13 @@ const deactivateHod = async (req, res) => {
 
     // Check if already deactivated
     const authUser = await authModel.findById(id);
+    if (!authUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Auth user not found"
+      });
+    }
+
     if (!authUser.isActive) {
       return res.status(400).json({
         success: false,
@@ -212,14 +245,27 @@ const deactivateHod = async (req, res) => {
       }
     );
 
+    // Fetch the updated HOD data with populated fields and auth status
+    const updatedHod = await hodModel
+      .findOne({ userId: id })
+      .populate('branchId', 'branchName')
+      .populate('departmentId', 'departmentName')
+      .populate('adminId', 'fullname email')
+      .populate('createdBy', 'fullname email')
+      .populate('updatedBy', 'fullname email');
+
+    // Convert to object and add isActive from auth
+    const hodObject = updatedHod.toObject();
+    
     return res.status(200).json({
       success: true,
       message: "HOD deactivated successfully",
       data: {
+        ...hodObject,
+        isActive: false, // Set to false since we just deactivated
         userId: id,
         fullname: deactivatedUser.fullname,
         email: deactivatedUser.email,
-        isActive: deactivatedUser.isActive,
         role: deactivatedUser.role
       }
     });
@@ -232,5 +278,82 @@ const deactivateHod = async (req, res) => {
   }
 };
 
+// In your HOD controller
+const reactivateHod = async (req, res) => {
+  try {
+    const { id } = req.params; // This is the userId
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required"
+      });
+    }
 
-module.exports = { createHod, getData, updateData, deactivateHod }; 
+    // Check if HOD exists
+    const hod = await hodModel.findOne({ userId: id });
+    if (!hod) {
+      return res.status(404).json({
+        success: false,
+        message: "HOD not found"
+      });
+    }
+
+    // Reactivate the user in auth model
+    const reactivatedUser = await authModel.findByIdAndUpdate(
+      id,
+      {
+        isActive: true
+      },
+      { new: true }
+    );
+
+    if (!reactivatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Auth user not found"
+      });
+    }
+
+    // Update hod model with reactivation info
+    await hodModel.findOneAndUpdate(
+      { userId: id },
+      {
+        updatedBy: req.user.id
+      }
+    );
+
+    // Fetch the updated HOD data with populated fields
+    const updatedHod = await hodModel
+      .findOne({ userId: id })
+      .populate('branchId', 'branchName')
+      .populate('departmentId', 'departmentName')
+      .populate('adminId', 'fullname email')
+      .populate('createdBy', 'fullname email')
+      .populate('updatedBy', 'fullname email');
+
+    const hodObject = updatedHod.toObject();
+    
+    return res.status(200).json({
+      success: true,
+      message: "HOD reactivated successfully",
+      data: {
+        ...hodObject,
+        isActive: true,
+        userId: id,
+        fullname: reactivatedUser.fullname,
+        email: reactivatedUser.email,
+        role: reactivatedUser.role
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+module.exports = { createHod, getData, updateData, deactivateHod, reactivateHod }; 

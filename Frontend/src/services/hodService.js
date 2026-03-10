@@ -24,7 +24,27 @@ export const updateHodData = (id, data) => {
 
 // Delete HOD
 export const deactivateHod = (id) => {
-  return axios.put(`${API_URL}/deactivate/${id}`, {}, {
-    withCredentials: true,
-  });
+  return axios.put(
+    `${API_URL}/deactivate/${id}`,
+    {},
+    {
+      withCredentials: true,
+    },
+  );
+};
+
+// In hodService.js
+export const reactivateHod = async (userId) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/reactivate/${userId}`,
+      {},
+      {
+        withCredentials: true,
+      },
+    );
+    return response.data; // This returns the data from the response
+  } catch (error) {
+    throw error;
+  }
 };

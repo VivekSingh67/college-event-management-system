@@ -7,5 +7,6 @@ routes.post('/create', authMiddleware.authUserMiddleware, hodController.createHo
 routes.get('/getData', authMiddleware.authUserMiddleware, hodController.getData)
 routes.put('/update/:id', authMiddleware.authUserMiddleware, hodController.updateData)
 routes.put('/deactivate/:id', authMiddleware.authUserMiddleware, hodController.deactivateHod)
+routes.put('/reactivate/:id', authMiddleware.authUserMiddleware, hodController.reactivateHod)
 
 module.exports = routes
