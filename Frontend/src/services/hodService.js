@@ -17,14 +17,14 @@ export const getHodData = () => {
 
 // Update HOD
 export const updateHodData = (id, data) => {
-  return axios.post(`${API_URL}/update/${id}`, data, {
+  return axios.put(`${API_URL}/update/${id}`, data, {
     withCredentials: true,
   });
 };
 
 // Delete HOD
-export const deleteData = (id) => {
-  return axios.delete(`${API_URL}/delete/${id}`, {
+export const deactivateHod = (id) => {
+  return axios.put(`${API_URL}/deactivate/${id}`, {}, {
     withCredentials: true,
   });
 };

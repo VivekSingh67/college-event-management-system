@@ -22,6 +22,13 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
   User,
   PlusCircle,
   Search,
@@ -32,6 +39,9 @@ import {
   List,
   Mail,
   Phone,
+  Filter,
+  Power,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBranches } from "../services/branchService";
@@ -41,7 +51,7 @@ import {
   createHod, 
   getHodData, 
   updateHodData, 
-  deleteData 
+  deactivateHod 
 } from "../services/hodService";
 
 const emptyForm = {
@@ -52,7 +62,6 @@ const emptyForm = {
   lastName: "",
   email: "",
   mobile: "",
-  // password field removed - will use default "1"
 };
 
 export default function HODsPage() {
@@ -63,9 +72,18 @@ export default function HODsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState(isStudent ? "card" : "table");
+  
+  // Filter states
+  const [branchFilter, setBranchFilter] = useState("all");
+  const [adminFilter, setAdminFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewHOD, setViewHOD] = useState(null);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [selectedHOD, setSelectedHOD] = useState(null);
   const [editingHOD, setEditingHOD] = useState(null);
   const [adminOptions, setAdminOptions] = useState([]);
   const [branchOptions, setBranchOptions] = useState([]);
@@ -73,7 +91,10 @@ export default function HODsPage() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
+  // ===== HELPER FUNCTIONS =====
+  
   // Helper function to get full name with null check
   const getFullName = (hod) => {
     if (!hod) return "";
@@ -84,19 +105,98 @@ export default function HODsPage() {
     return `${hod.firstName || hod.firstname || ''} ${hod.lastName || hod.lastname || ''}`.trim() || "Unknown";
   };
 
-  // Combine first and last name for display and search
+  // Helper function to get display names from IDs - ALWAYS RETURN STRING
+  const getBranchName = (branchId) => {
+    if (!branchId) return "";
+    // Handle if branchId is an object (populated data)
+    if (typeof branchId === 'object' && branchId !== null) {
+      return branchId.branchName || branchId.name || "";
+    }
+    const branch = branchOptions.find(b => b._id === branchId || b.id === branchId);
+    return branch?.branchName || branch?.name || branchId || "";
+  };
+
+  const getAdminName = (adminId) => {
+    if (!adminId) return "";
+    // Handle if adminId is an object (populated data)
+    if (typeof adminId === 'object' && adminId !== null) {
+      const firstName = adminId.fullname?.firstname || adminId.firstName || adminId.firstname || '';
+      const lastName = adminId.fullname?.lastname || adminId.lastName || adminId.lastname || '';
+      return `${firstName} ${lastName}`.trim() || "";
+    }
+    const admin = adminOptions.find(a => a._id === adminId || a.id === adminId);
+    if (!admin) return adminId || "";
+    const firstName = admin.fullname?.firstname || admin.firstName || admin.firstname || '';
+    const lastName = admin.fullname?.lastname || admin.lastName || admin.lastname || '';
+    return `${firstName} ${lastName}`.trim() || adminId || "";
+  };
+
+  const getDepartmentName = (deptId) => {
+    if (!deptId) return "";
+    // Handle if deptId is an object (populated data)
+    if (typeof deptId === 'object' && deptId !== null) {
+      return deptId.departmentName || deptId.name || "";
+    }
+    const dept = departmentOptions.find(d => d._id === deptId || d.id === deptId);
+    return dept?.departmentName || dept?.name || deptId || "";
+  };
+
+  // Safe string converter - ensures we always render strings, not objects
+  const safeString = (value) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === 'object') {
+      // If it's an object, try to get a string representation
+      if (value.branchName) return value.branchName;
+      if (value.departmentName) return value.departmentName;
+      if (value.name) return value.name;
+      if (value.email) return value.email;
+      if (value.fullname) {
+        return `${value.fullname.firstname || ''} ${value.fullname.lastname || ''}`.trim();
+      }
+      return JSON.stringify(value); // Fallback
+    }
+    return String(value);
+  };
+
+  // ===== FILTER FUNCTION =====
+  
+  // Apply all filters
   const filteredHODs = hods.filter((h) => {
     if (!h) return false;
-    const fullName = getFullName(h);
-    const department = h.departmentName || h.department?.departmentName || h.department || '';
-    const branch = h.branchName || h.branch?.branchName || h.branch || '';
     
-    return (
+    const fullName = getFullName(h);
+    const department = safeString(h.departmentName || h.department?.departmentName || h.department);
+    const branch = safeString(h.branchName || h.branch?.branchName || h.branch);
+    const admin = safeString(h.adminName || getAdminName(h.adminId || h.admin));
+    const isActive = h.isActive !== false; // Default to true if not specified
+    
+    // Search filter
+    const matchesSearch = search === "" || (
       department.toLowerCase().includes(search.toLowerCase()) ||
       fullName.toLowerCase().includes(search.toLowerCase()) ||
       (h.email?.toLowerCase() || '').includes(search.toLowerCase()) ||
-      branch.toLowerCase().includes(search.toLowerCase())
+      branch.toLowerCase().includes(search.toLowerCase()) ||
+      admin.toLowerCase().includes(search.toLowerCase())
     );
+
+    // Branch filter - handle both string IDs and object references
+    const branchId = typeof h.branchId === 'object' ? h.branchId?._id : h.branchId || h.branch;
+    const matchesBranch = branchFilter === "all" || branchId === branchFilter;
+
+    // Admin filter
+    const adminId = typeof h.adminId === 'object' ? h.adminId?._id : h.adminId || h.admin;
+    const matchesAdmin = adminFilter === "all" || adminId === adminFilter;
+
+    // Department filter
+    const deptId = typeof h.departmentId === 'object' ? h.departmentId?._id : h.departmentId || h.department;
+    const matchesDepartment = departmentFilter === "all" || deptId === departmentFilter;
+
+    // Status filter
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && isActive) || 
+      (statusFilter === "inactive" && !isActive);
+
+    return matchesSearch && matchesBranch && matchesAdmin && matchesDepartment && matchesStatus;
   });
 
   const validateForm = (isEdit = false) => {
@@ -132,9 +232,11 @@ export default function HODsPage() {
       newErrors.email = "Please enter a valid email address";
     }
 
-    if (!form.mobile.trim()) {
+    // Fix: Convert mobile to string before using trim()
+    const mobileStr = String(form.mobile || '').trim();
+    if (!mobileStr) {
       newErrors.mobile = "Mobile number is required";
-    } else if (!/^\+?\d{10,15}$/.test(form.mobile.replace(/\s/g, ""))) {
+    } else if (!/^\+?\d{10,15}$/.test(mobileStr.replace(/\s/g, ""))) {
       newErrors.mobile = "Enter a valid mobile number (10–15 digits)";
     }
 
@@ -167,9 +269,18 @@ export default function HODsPage() {
   const fetchHODs = async () => {
     try {
       const res = await getHodData();
-      console.log(res.data)
+      console.log("HODs response:", res.data);
+      
       // Handle different response structures
-      const hodData = res.data?.data || res.data?.hods || res.data || [];
+      let hodData = [];
+      if (res.data?.data) {
+        hodData = res.data.data;
+      } else if (res.data?.hods) {
+        hodData = res.data.hods;
+      } else if (Array.isArray(res.data)) {
+        hodData = res.data;
+      }
+      
       setHODs(Array.isArray(hodData) ? hodData : []);
     } catch (error) {
       console.error("Error fetching HODs:", error);
@@ -263,15 +374,15 @@ export default function HODsPage() {
     
     setEditingHOD(hod);
     
-    // Set form with existing values
+    // Set form with existing values - ensure all values are properly converted
     setForm({
-      branch: hod.branchId || hod.branch || "",
-      admin: hod.adminId || hod.admin || "",
-      department: hod.departmentId || hod.department || "",
+      branch: hod.branchId?._id || hod.branchId || hod.branch || "",
+      admin: hod.adminId?._id || hod.adminId || hod.admin || "",
+      department: hod.departmentId?._id || hod.departmentId || hod.department || "",
       firstName: hod.firstname || hod.firstName || hod.fullname?.firstname || '',
       lastName: hod.lastname || hod.lastName || hod.fullname?.lastname || '',
       email: hod.email || '',
-      mobile: hod.mobile || '',
+      mobile: hod.mobile ? String(hod.mobile) : '', // Convert to string
     });
     setEditDialogOpen(true);
   };
@@ -316,49 +427,61 @@ export default function HODsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!id) return;
-    if (!window.confirm("Are you sure you want to delete this HOD?")) return;
+  const handleDeactivate = (hod) => {
+    setSelectedHOD(hod);
+    setDeactivateDialogOpen(true);
+  };
 
+  const confirmDeactivate = async () => {
+    if (!selectedHOD) return;
+    
+    setSubmitting(true);
     try {
-      await deleteData(id);
-      setHODs(hods.filter((h) => h._id !== id && h.id !== id));
-      toast.success("HOD removed successfully");
+      // Get the userId from the HOD object
+      const userId = selectedHOD.userId || selectedHOD._id || selectedHOD.id;
+      
+      if (!userId) {
+        toast.error("Invalid HOD ID");
+        return;
+      }
+
+      await deactivateHod(userId);
+      
+      // Update the HOD in the list to reflect deactivated status
+      setHODs(hods.map((h) => 
+        (h._id === selectedHOD._id || h.id === selectedHOD.id || h.userId === selectedHOD.userId) 
+          ? { ...h, isActive: false } 
+          : h
+      ));
+      
+      setDeactivateDialogOpen(false);
+      setSelectedHOD(null);
+      toast.success("HOD deactivated successfully!");
     } catch (error) {
-      console.error("Error deleting HOD:", error);
-      toast.error(error.response?.data?.message || "Failed to delete HOD");
+      console.error("Error deactivating HOD:", error);
+      toast.error(error.response?.data?.message || "Failed to deactivate HOD");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditDialogOpen(false);
+    setDeactivateDialogOpen(false);
     setEditingHOD(null);
+    setSelectedHOD(null);
     setViewHOD(null);
     setForm(emptyForm);
     setErrors({});
   };
 
-  // Helper function to get display names from IDs
-  const getBranchName = (branchId) => {
-    if (!branchId) return "";
-    const branch = branchOptions.find(b => b._id === branchId || b.id === branchId);
-    return branch?.branchName || branch?.name || branchId;
-  };
-
-  const getAdminName = (adminId) => {
-    if (!adminId) return "";
-    const admin = adminOptions.find(a => a._id === adminId || a.id === adminId);
-    if (!admin) return adminId;
-    const firstName = admin.fullname?.firstname || admin.firstName || admin.firstname || '';
-    const lastName = admin.fullname?.lastname || admin.lastName || admin.lastname || '';
-    return `${firstName} ${lastName}`.trim() || adminId;
-  };
-
-  const getDepartmentName = (deptId) => {
-    if (!deptId) return "";
-    const dept = departmentOptions.find(d => d._id === deptId || d.id === deptId);
-    return dept?.departmentName || dept?.name || deptId;
+  const clearFilters = () => {
+    setBranchFilter("all");
+    setAdminFilter("all");
+    setDepartmentFilter("all");
+    setStatusFilter("all");
+    setSearch("");
   };
 
   if (loading) {
@@ -394,47 +517,175 @@ export default function HODsPage() {
           )}
         </div>
 
-        {/* Search & View Toggle */}
+        {/* Search & Filters */}
         <Card className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by branch, department, name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+          <div className="space-y-3">
+            {/* Search row with filter toggle */}
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by branch, department, name, email or admin..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={showFilters ? "bg-primary/10" : ""}
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex border rounded-lg overflow-hidden">
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="icon"
+                    onClick={() => setViewMode("table")}
+                    className={
+                      viewMode === "table"
+                        ? "bg-primary text-primary-foreground rounded-none"
+                        : "rounded-none"
+                    }
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "card" ? "default" : "ghost"}
+                    size="icon"
+                    onClick={() => setViewMode("card")}
+                    className={
+                      viewMode === "card"
+                        ? "bg-primary text-primary-foreground rounded-none"
+                        : "rounded-none"
+                    }
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            <div className="flex border rounded-lg overflow-hidden shrink-0">
-              <Button
-                variant={viewMode === "table" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("table")}
-                className={
-                  viewMode === "table"
-                    ? "bg-primary text-primary-foreground rounded-none"
-                    : "rounded-none"
-                }
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "card" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("card")}
-                className={
-                  viewMode === "card"
-                    ? "bg-primary text-primary-foreground rounded-none"
-                    : "rounded-none"
-                }
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* Filter dropdowns */}
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t">
+                <div className="space-y-1">
+                  <Label className="text-xs">Branch Filter</Label>
+                  <Select value={branchFilter} onValueChange={setBranchFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Branches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Branches</SelectItem>
+                      {branchOptions.map((branch) => (
+                        <SelectItem key={branch._id} value={branch._id}>
+                          {branch.branchName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Admin Filter</Label>
+                  <Select value={adminFilter} onValueChange={setAdminFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Admins" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Admins</SelectItem>
+                      {adminOptions.map((admin) => (
+                        <SelectItem key={admin._id} value={admin._id}>
+                          {getAdminName(admin._id)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Department Filter</Label>
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Departments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {departmentOptions.map((dept) => (
+                        <SelectItem key={dept._id} value={dept._id}>
+                          {dept.departmentName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Status Filter</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="h-9 text-xs"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Active filters display - ENSURE STRINGS */}
+            {(branchFilter !== "all" || adminFilter !== "all" || departmentFilter !== "all" || statusFilter !== "all" || search) && (
+              <div className="flex flex-wrap gap-2 pt-1 text-xs text-muted-foreground">
+                <span className="font-medium">Active filters:</span>
+                {search && <span className="bg-muted px-2 py-1 rounded">Search: "{search}"</span>}
+                {branchFilter !== "all" && (
+                  <span className="bg-muted px-2 py-1 rounded">
+                    Branch: {safeString(branchOptions.find(b => b._id === branchFilter)?.branchName || branchFilter)}
+                  </span>
+                )}
+                {adminFilter !== "all" && (
+                  <span className="bg-muted px-2 py-1 rounded">
+                    Admin: {safeString(getAdminName(adminFilter))}
+                  </span>
+                )}
+                {departmentFilter !== "all" && (
+                  <span className="bg-muted px-2 py-1 rounded">
+                    Department: {safeString(departmentOptions.find(d => d._id === departmentFilter)?.departmentName || departmentFilter)}
+                  </span>
+                )}
+                {statusFilter !== "all" && (
+                  <span className="bg-muted px-2 py-1 rounded">
+                    Status: {statusFilter === "active" ? "Active" : "Inactive"}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </Card>
+
+        {/* Results count */}
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredHODs.length} of {hods.length} HODs
+        </div>
 
         {/* Table View */}
         {viewMode === "table" ? (
@@ -442,7 +693,9 @@ export default function HODsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead>Status</TableHead>
                   <TableHead>Branch</TableHead>
+                  <TableHead>Admin</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Email</TableHead>
@@ -452,17 +705,31 @@ export default function HODsPage() {
               </TableHeader>
               <TableBody>
                 {filteredHODs.map((hod) => (
-                  <TableRow key={hod._id || hod.id || Math.random()} className="hover:bg-muted/30">
-                    <TableCell>{hod.branchName || getBranchName(hod.branchId || hod.branch)}</TableCell>
+                  <TableRow key={hod._id || hod.id || hod.userId || Math.random()} className="hover:bg-muted/30">
+                    {/* Status cell */}
+                    <TableCell>
+                      {hod.isActive === false ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                          Inactive
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                          Active
+                        </span>
+                      )}
+                    </TableCell>
+                    {/* ENSURE ALL CELLS RENDER STRINGS, NOT OBJECTS */}
+                    <TableCell>{safeString(hod.branchName || getBranchName(hod.branchId || hod.branch))}</TableCell>
+                    <TableCell>{safeString(hod.adminName || getAdminName(hod.adminId || hod.admin))}</TableCell>
                     <TableCell className="font-medium">
-                      {hod.departmentName || getDepartmentName(hod.departmentId || hod.department)}
+                      {safeString(hod.departmentName || getDepartmentName(hod.departmentId || hod.department))}
                     </TableCell>
-                    <TableCell>{getFullName(hod)}</TableCell>
+                    <TableCell>{safeString(getFullName(hod))}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {hod.email || '-'}
+                      {safeString(hod.email || '-')}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {hod.mobile || '-'}
+                      {safeString(hod.mobile || '-')}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -481,17 +748,32 @@ export default function HODsPage() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => handleEdit(hod)}
+                              disabled={hod.isActive === false} // Disable edit for inactive HODs
+                              title={hod.isActive === false ? "Cannot edit inactive HOD" : "Edit HOD"}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(hod._id || hod.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {hod.isActive !== false ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                onClick={() => handleDeactivate(hod)}
+                                title="Deactivate HOD"
+                              >
+                                <Power className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-gray-400 cursor-not-allowed"
+                                disabled
+                                title="Already deactivated"
+                              >
+                                <AlertCircle className="h-4 w-4" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -501,10 +783,10 @@ export default function HODsPage() {
                 {filteredHODs.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={8}
                       className="text-center py-10 text-muted-foreground"
                     >
-                      No HODs found
+                      No HODs found matching the filters
                     </TableCell>
                   </TableRow>
                 )}
@@ -516,29 +798,39 @@ export default function HODsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredHODs.map((hod) => (
               <Card
-                key={hod._id || hod.id || Math.random()}
-                className="p-5 hover:shadow-md transition-shadow"
+                key={hod._id || hod.id || hod.userId || Math.random()}
+                className={`p-5 hover:shadow-md transition-shadow ${
+                  hod.isActive === false ? 'opacity-75 bg-gray-50 dark:bg-gray-800/50' : ''
+                }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <User className="h-5 w-5 text-primary" />
                   </div>
+                  {hod.isActive === false && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                      Inactive
+                    </span>
+                  )}
                 </div>
-                <h3 className="font-semibold text-lg mb-1">{getFullName(hod)}</h3>
+                <h3 className="font-semibold text-lg mb-1">{safeString(getFullName(hod))}</h3>
                 <p className="text-sm font-medium text-primary mb-1">
-                  {hod.departmentName || getDepartmentName(hod.departmentId || hod.department)}
+                  {safeString(hod.departmentName || getDepartmentName(hod.departmentId || hod.department))}
                 </p>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {hod.branchName || getBranchName(hod.branchId || hod.branch)}
+                  Branch: {safeString(hod.branchName || getBranchName(hod.branchId || hod.branch))}
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Admin: {safeString(hod.adminName || getAdminName(hod.adminId || hod.admin))}
                 </p>
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-2">
                     <Mail className="h-3.5 w-3.5" />
-                    {hod.email || '-'}
+                    {safeString(hod.email || '-')}
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5" />
-                    {hod.mobile || '-'}
+                    {safeString(hod.mobile || '-')}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -550,7 +842,7 @@ export default function HODsPage() {
                   >
                     <Eye className="h-3.5 w-3.5 mr-1" /> View
                   </Button>
-                  {!isStudent && (
+                  {!isStudent && hod.isActive !== false && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -560,19 +852,29 @@ export default function HODsPage() {
                       <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                     </Button>
                   )}
+                  {!isStudent && hod.isActive !== false && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                      onClick={() => handleDeactivate(hod)}
+                    >
+                      <Power className="h-3.5 w-3.5 mr-1" /> Deactivate
+                    </Button>
+                  )}
                 </div>
               </Card>
             ))}
             {filteredHODs.length === 0 && (
               <div className="col-span-full text-center py-16 text-muted-foreground">
-                No HODs found
+                No HODs found matching the filters
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Add HOD Dialog - No scroll, compact design */}
+      {/* Add HOD Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md !overflow-visible">
           <DialogHeader>
@@ -721,7 +1023,7 @@ export default function HODsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit HOD Dialog - No scroll, compact design */}
+      {/* Edit HOD Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md !overflow-visible">
           <DialogHeader>
@@ -864,61 +1166,139 @@ export default function HODsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Deactivate HOD Dialog */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-600 flex items-center gap-2">
+              <Power className="h-5 w-5" />
+              Deactivate HOD
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate this Head of Department?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedHOD && (
+            <div className="py-4">
+              <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-md border border-amber-200 dark:border-amber-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-400">You are about to deactivate:</p>
+                <p className="text-lg font-semibold mt-1 text-amber-900 dark:text-amber-300">
+                  {getFullName(selectedHOD)}
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
+                  {selectedHOD.email}
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-500">
+                  Department: {safeString(selectedHOD.departmentName || 
+                    getDepartmentName(selectedHOD.departmentId || selectedHOD.department))}
+                </p>
+              </div>
+              <div className="mt-4 p-3 bg-muted rounded-md">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Deactivating will prevent this HOD from accessing the system. 
+                    The HOD's data will be preserved but they won't be able to log in.
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCloseDialog}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="default"
+              size="sm"
+              onClick={confirmDeactivate}
+              disabled={submitting}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {submitting ? "Deactivating..." : "Confirm Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* View HOD Dialog */}
       <Dialog open={!!viewHOD} onOpenChange={() => setViewHOD(null)}>
         <DialogContent className="max-w-md !overflow-visible">
           <DialogHeader>
-            <DialogTitle>{viewHOD ? getFullName(viewHOD) : 'HOD Details'}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {viewHOD ? getFullName(viewHOD) : 'HOD Details'}
+            </DialogTitle>
             <DialogDescription>
               Head of Department Information
             </DialogDescription>
           </DialogHeader>
           {viewHOD && (
             <div className="space-y-3 py-2">
+              {/* Status */}
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Status</p>
+                <p className="text-sm">
+                  {viewHOD.isActive === false ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  )}
+                </p>
+              </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Branch</p>
                 <p className="text-sm">
-                  {viewHOD.branchName || getBranchName(viewHOD.branchId || viewHOD.branch) || '-'}
+                  {safeString(viewHOD.branchName || getBranchName(viewHOD.branchId || viewHOD.branch) || '-')}
                 </p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Admin</p>
                 <p className="text-sm">
-                  {viewHOD.adminName || getAdminName(viewHOD.adminId || viewHOD.admin) || '-'}
+                  {safeString(viewHOD.adminName || getAdminName(viewHOD.adminId || viewHOD.admin) || '-')}
                 </p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Department</p>
                 <p className="text-sm">
-                  {viewHOD.departmentName || getDepartmentName(viewHOD.departmentId || viewHOD.department) || '-'}
+                  {safeString(viewHOD.departmentName || getDepartmentName(viewHOD.departmentId || viewHOD.department) || '-')}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-0.5">
                   <p className="text-xs font-medium text-muted-foreground">First Name</p>
                   <p className="text-sm">
-                    {viewHOD.firstname || viewHOD.firstName || viewHOD.fullname?.firstname || '-'}
+                    {safeString(viewHOD.firstname || viewHOD.firstName || viewHOD.fullname?.firstname || '-')}
                   </p>
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-xs font-medium text-muted-foreground">Last Name</p>
                   <p className="text-sm">
-                    {viewHOD.lastname || viewHOD.lastName || viewHOD.fullname?.lastname || '-'}
+                    {safeString(viewHOD.lastname || viewHOD.lastName || viewHOD.fullname?.lastname || '-')}
                   </p>
                 </div>
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Email</p>
-                <p className="text-sm">{viewHOD.email || '-'}</p>
+                <p className="text-sm">{safeString(viewHOD.email || '-')}</p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Mobile</p>
-                <p className="text-sm">{viewHOD.mobile || '-'}</p>
+                <p className="text-sm">{safeString(viewHOD.mobile || '-')}</p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-muted-foreground">Created By</p>
                 <p className="text-sm">
-                  {viewHOD.createdBy ? (typeof viewHOD.createdBy === 'object' ? getFullName(viewHOD.createdBy) : viewHOD.createdBy) : "System"}
+                  {safeString(viewHOD.createdBy ? (typeof viewHOD.createdBy === 'object' ? getFullName(viewHOD.createdBy) : viewHOD.createdBy) : "System")}
                 </p>
               </div>
               <div className="space-y-0.5">

@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 
 const createHod = async (req, res) => {
   try {
-    let {branchId,adminId ,departmentId, fullname, email, mobile, password, role } =
+    let { branchId, adminId, departmentId, fullname, email, mobile, password, role } =
       req.body;
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -51,7 +51,7 @@ const createHod = async (req, res) => {
     });
 
     const hod = await hodModel.create({
-      userId: auth._id,  
+      userId: auth._id,
       branchId,
       adminId,
       departmentId,
@@ -75,18 +75,44 @@ const createHod = async (req, res) => {
   }
 };
 
+
 const getData = async (req, res) => {
   try {
-    let { branchId, departmentId } = req.query;
-    const hod = await hodModel.find({
-      branchId,
-      departmentId,
-    });
+    let { branchId, departmentId, adminId } = req.query;
 
-    return res.status(201).json({
+    // Build filter object dynamically
+    let filter = {};
+
+    // Add filters only if they are provided
+    if (branchId) {
+      filter.branchId = branchId;
+    }
+
+    if (departmentId) {
+      filter.departmentId = departmentId;
+    }
+
+    if (adminId) {
+      filter.adminId = adminId;
+    }
+
+
+    const hod = await hodModel.find(filter)
+      .populate('branchId', 'branchName')
+      .populate('departmentId', 'departmentName')
+      .populate('adminId', 'fullname email')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
       success: true,
       data: hod,
+      filters: {              // Send back applied filters for reference
+        branchId: branchId || null,
+        departmentId: departmentId || null,
+        adminId: adminId || null
+      }
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -100,7 +126,7 @@ const updateData = async (req, res) => {
   try {
     let { branchId, departmentId, fullname, email, mobile, role, isActive } = req.body;
 
-    const auth = await authModel.findOneAndUpdate({ _id: req.params.id },{
+    const auth = await authModel.findOneAndUpdate({ _id: req.params.id }, {
       fullname: {
         firstname: fullname.firstname,
         lastname: fullname.lastname,
@@ -125,7 +151,7 @@ const updateData = async (req, res) => {
       },
     );
 
-    const updateDatas = await hodModel.findOne({userId: req.params.id});
+    const updateDatas = await hodModel.findOne({ userId: req.params.id });
 
     return res.status(201).json({
       success: true,
@@ -140,4 +166,71 @@ const updateData = async (req, res) => {
 };
 
 
-module.exports = { createHod, getData, updateData }; 
+const deactivateHod = async (req, res) => {
+  try {
+    const { id } = req.params;  // This is the userId
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required"
+      });
+    }
+
+    // Check if HOD exists
+    const hod = await hodModel.findOne({ userId: id });
+    if (!hod) {
+      return res.status(404).json({
+        success: false,
+        message: "HOD not found"
+      });
+    }
+
+    // Check if already deactivated
+    const authUser = await authModel.findById(id);
+    if (!authUser.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "HOD is already deactivated"
+      });
+    }
+
+    // Deactivate the user in auth model
+    const deactivatedUser = await authModel.findByIdAndUpdate(
+      id,
+      {
+        isActive: false
+      },
+      { new: true }
+    );
+
+    // Update hod model with deactivation info
+    await hodModel.findOneAndUpdate(
+      { userId: id },
+      {
+        updatedBy: req.user.id
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "HOD deactivated successfully",
+      data: {
+        userId: id,
+        fullname: deactivatedUser.fullname,
+        email: deactivatedUser.email,
+        isActive: deactivatedUser.isActive,
+        role: deactivatedUser.role
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+module.exports = { createHod, getData, updateData, deactivateHod }; 
