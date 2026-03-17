@@ -5,6 +5,7 @@ const db = require("./config/db")
 db()
 const cookieParser = require('cookie-parser');
 const authRouter = require("./routes/auth.routes")
+const collegeRoutes = require("./routes/college.routes")
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -12,5 +13,6 @@ app.use(express.static(path.join(__dirname)));
 app.use(cookieParser());
 
 app.use("/auth", authRouter)
+app.use("/api/colleges", collegeRoutes);
 
 module.exports = app;

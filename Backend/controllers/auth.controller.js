@@ -1,6 +1,9 @@
 const userModel = require("../models/User.model");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const { hashPassword, comparePassword } = require("../utils/hashPassword");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../utils/generateToken");
 
 const register = async (req, res) => {
   try {
@@ -19,40 +22,44 @@ const register = async (req, res) => {
       });
     }
 
-    const hashPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
 
     const user = await userModel.create({
       name,
       email,
       phone,
-      password: hashPassword,
+      password: hashedPassword,
       profile_image,
       role,
     });
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    res.cookie("token", token);
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      profile_image: user.profile_image,
+    };
 
     return res.status(201).json({
       success: true,
-      message: "Create SuccessFully",
-      user,
+      message: "Registered successfully",
+      accessToken,
+      user: userResponse,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -74,35 +81,20 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "आपका अकाउंट एक्टिव नहीं है" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "गलत email या password" });
     }
 
-    // // 4. Tokens generate
-    // const accessToken = generateAccessToken(user);
-    // const refreshToken = generateRefreshToken(user);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    // // 5. Refresh token को httpOnly cookie में डालो (सुरक्षित)
-    // res.cookie('refreshToken', refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production', // production में true
-    //   sameSite: 'strict',
-    //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 दिन
-    // });
-
-    const accessToken = jwt.sign(
-      {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-
-    res.cookie("token", accessToken);
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     const userResponse = {
       _id: user._id,
@@ -129,4 +121,22 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// ─── LOGOUT ──────────────────────────────────────────────
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { register, login, logout };
