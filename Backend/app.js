@@ -6,6 +6,7 @@ db()
 const cookieParser = require('cookie-parser');
 const authRouter = require("./routes/auth.routes")
 const collegeRoutes = require("./routes/college.routes")
+const branchRoutes = require("./routes/branch.routes")
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -14,5 +15,6 @@ app.use(cookieParser());
 
 app.use("/auth", authRouter)
 app.use("/api/colleges", collegeRoutes);
+app.use("/api/branch", branchRoutes);
 
 module.exports = app;
