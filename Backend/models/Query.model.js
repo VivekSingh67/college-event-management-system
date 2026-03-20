@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const querySchema = new mongoose.Schema(
   {
@@ -42,4 +42,4 @@ const querySchema = new mongoose.Schema(
 
 const Query = mongoose.model("Query", querySchema);
 
-export default Query;
+module.exports = Query;

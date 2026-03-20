@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const batchSchema = new mongoose.Schema(
   {
@@ -52,4 +52,4 @@ const batchSchema = new mongoose.Schema(
 
 const Batch = mongoose.model("Batch", batchSchema);
 
-export default Batch;
+module.exports = Batch;

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const activityLogSchema = new mongoose.Schema(
   {
@@ -31,9 +31,6 @@ const activityLogSchema = new mongoose.Schema(
   }
 );
 
-const ActivityLog = mongoose.model(
-  "ActivityLog",
-  activityLogSchema,
-);
+const ActivityLog = mongoose.model("ActivityLog", activityLogSchema);
 
-export default ActivityLog;
+module.exports = ActivityLog;

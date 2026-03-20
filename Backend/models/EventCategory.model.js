@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const eventCategorySchema = new mongoose.Schema(
   {
@@ -31,4 +31,4 @@ const eventCategorySchema = new mongoose.Schema(
 
 const EventCategory = mongoose.model("EventCategory", eventCategorySchema);
 
-export default EventCategory;
+module.exports = EventCategory;

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const hodSchema = new mongoose.Schema(
   {
@@ -53,4 +53,4 @@ const hodSchema = new mongoose.Schema(
 
 const Hod = mongoose.model("Hod", hodSchema);
 
-export default Hod;
+module.exports = Hod;

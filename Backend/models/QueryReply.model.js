@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const queryReplySchema = new mongoose.Schema(
   {
@@ -24,9 +24,6 @@ const queryReplySchema = new mongoose.Schema(
   }
 );
 
-const QueryReply = mongoose.model(
-  "QueryReply",
-  queryReplySchema,
-);
+const QueryReply = mongoose.model("QueryReply", queryReplySchema);
 
-export default QueryReply;
+module.exports = QueryReply;

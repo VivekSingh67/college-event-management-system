@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const announcementSchema = new mongoose.Schema(
   {
@@ -67,4 +67,4 @@ const announcementSchema = new mongoose.Schema(
 
 const Announcement = mongoose.model("Announcement", announcementSchema);
 
-export default Announcement;
+module.exports = Announcement;

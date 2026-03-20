@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const eventVenueSchema = new mongoose.Schema(
   {
@@ -39,4 +39,4 @@ const eventVenueSchema = new mongoose.Schema(
 
 const EventVenue = mongoose.model("EventVenue", eventVenueSchema, "event_venues");
 
-export default EventVenue;
+module.exports = EventVenue;

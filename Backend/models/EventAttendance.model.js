@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const eventAttendanceSchema = new mongoose.Schema(
   {
@@ -35,9 +35,6 @@ const eventAttendanceSchema = new mongoose.Schema(
   }
 );
 
-const EventAttendance = mongoose.model(
-  "EventAttendance",
-  eventAttendanceSchema,
-);
+const EventAttendance = mongoose.model("EventAttendance", eventAttendanceSchema);
 
-export default EventAttendance;
+module.exports = EventAttendance;

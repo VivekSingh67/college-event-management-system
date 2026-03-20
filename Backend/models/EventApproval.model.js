@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const eventApprovalSchema = new mongoose.Schema(
   {
@@ -40,9 +40,6 @@ const eventApprovalSchema = new mongoose.Schema(
   }
 );
 
-const EventApproval = mongoose.model(
-  "EventApproval",
-  eventApprovalSchema,
-);
+const EventApproval = mongoose.model("EventApproval", eventApprovalSchema);
 
-export default EventApproval;
+module.exports = EventApproval;
