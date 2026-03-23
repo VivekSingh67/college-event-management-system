@@ -126,4 +126,21 @@ const deleteEventRegistration = async (req, res) => {
   }
 };
 
-module.exports = { createEventRegistration, getAllEventRegistrations, getEventRegistrationById, updateEventRegistration, deleteEventRegistration };
+const getMyRegistrations = async (req, res) => {
+  try {
+    const student = await mongoose.model("Student").findOne({ user_id: req.user.id });
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student profile not found" });
+    }
+
+    const registrations = await EventRegistration.find({ student_id: student._id })
+      .populate("event_id", "event_title event_type event_date location")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, data: registrations });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+module.exports = { createEventRegistration, getAllEventRegistrations, getEventRegistrationById, updateEventRegistration, deleteEventRegistration, getMyRegistrations };

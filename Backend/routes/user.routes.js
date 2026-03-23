@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createUser, getAllUsers, getUserById, updateUser, deleteUser } = require("../controllers/user.controller");
+const { createUser, getAllUsers, getUserById, updateUser, deleteUser, getMe } = require("../controllers/user.controller");
 const { protect } = require("../middlewares/auth.middleware");
 const { adminOnly, superAdminOnly } = require("../middlewares/role.middleware");
 const { validate } = require("../middlewares/validate.middleware");
@@ -10,6 +10,9 @@ router.post("/", protect, superAdminOnly, validate("user"), createUser);
 
 // GET    /api/users        — admin+ can view all users
 router.get("/", protect, adminOnly, getAllUsers);
+
+// GET    /api/users/me     — get current user profile
+router.get("/me", protect, getMe);
 
 // GET    /api/users/:id    — authenticated users can view profile
 router.get("/:id", protect, getUserById);

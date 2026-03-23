@@ -123,4 +123,22 @@ const deleteAttendance = async (req, res) => {
   }
 };
 
-module.exports = { createAttendance, getAllAttendance, getAttendanceById, updateAttendance, deleteAttendance };
+const getMyAttendance = async (req, res) => {
+  try {
+    const student = await mongoose.model("Student").findOne({ user_id: req.user.id });
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student profile not found" });
+    }
+
+    const records = await EventAttendance.find({ student_id: student._id })
+      .populate("event_id", "event_title event_date")
+      .populate("marked_by", "name")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, data: records });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+module.exports = { createAttendance, getAllAttendance, getAttendanceById, updateAttendance, deleteAttendance, getMyAttendance };

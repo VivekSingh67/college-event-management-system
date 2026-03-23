@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { createAttendance, getAllAttendance, getAttendanceById, updateAttendance, deleteAttendance } = require("../controllers/attendance.controller");
+const { createAttendance, getAllAttendance, getAttendanceById, updateAttendance, deleteAttendance, getMyAttendance } = require("../controllers/attendance.controller");
 const { protect } = require("../middlewares/auth.middleware");
 const { staffOnly, adminOrHod, adminOnly } = require("../middlewares/role.middleware");
 
 // POST   /api/attendance       — staff marks attendance
 router.post("/", protect, staffOnly, createAttendance);
 
-// GET    /api/attendance       — staff can view attendance records
-router.get("/", protect, staffOnly, getAllAttendance);
+// GET    /api/attendance/me    — get current student attendance
+router.get("/me", protect, getMyAttendance);
 
 // GET    /api/attendance/:id   — authenticated
 router.get("/:id", protect, getAttendanceById);

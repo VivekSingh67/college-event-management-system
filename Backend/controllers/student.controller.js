@@ -139,4 +139,21 @@ const deleteStudent = async (req, res) => {
   }
 };
 
-module.exports = { createStudent, getAllStudents, getStudentById, updateStudent, deleteStudent };
+const getStudentProfile = async (req, res) => {
+  try {
+    const student = await Student.findOne({ user_id: req.user.id })
+      .populate("user_id", "name email phone profile_image")
+      .populate("branch_id", "branch_name branch_code")
+      .populate("department_id", "department_name department_code")
+      .populate("batch_id", "batch_name start_year end_year");
+    
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student profile not found" });
+    }
+    return res.status(200).json({ success: true, data: student });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+module.exports = { createStudent, getAllStudents, getStudentById, updateStudent, deleteStudent, getStudentProfile };

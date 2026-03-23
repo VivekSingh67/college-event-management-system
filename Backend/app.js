@@ -1,11 +1,18 @@
 const express = require("express");
 const app = express();
 const path = require("path");
+const cors = require("cors");
 const db = require("./config/db");
 db();
 const cookieParser = require("cookie-parser");
 
 // ─── Core Middleware ───────────────────────────────────────
+app.use(cors({
+  origin: "http://localhost:5173", // Standard Vite dev port
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
