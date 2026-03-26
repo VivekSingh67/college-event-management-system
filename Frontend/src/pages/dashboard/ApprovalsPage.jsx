@@ -27,7 +27,7 @@ const fields = [
     optionValue: "_id",
     required: true 
   },
-  { key: "approver_role", label: "Approver Role", type: "select", options: ["admin", "super_admin"] },
+  { key: "approver_role", label: "Approver Role", type: "select", options: ["admin", "hod", "faculty"] },
   { key: "approval_status", label: "Status", type: "select", options: ["pending", "approved", "rejected"] },
   { key: "remarks", label: "Remarks", type: "textarea" },
 ];

@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
+const envConfig = require("../config/envConfig");
 
 /**
  * protect — Verify JWT and attach user to req.user
@@ -28,7 +29,7 @@ const protect = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, envConfig.JWT_ACCESS_SECRET);
 
     // Fetch fresh user data (check if still active)
     const user = await User.findById(decoded.id).select("-password");
@@ -73,7 +74,7 @@ const optionalAuth = async (req, res, next) => {
     }
 
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET);
+      const decoded = jwt.verify(token, envConfig.JWT_ACCESS_SECRET);
       const user = await User.findById(decoded.id).select("-password");
       if (user && user.status === "active") {
         req.user = user;

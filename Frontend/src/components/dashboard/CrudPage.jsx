@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
-import apiClient from "@/lib/apiClient";
+import { resourceRegistry } from "@/redux/resourceRegistry";
 
+/**
+ * CrudPage — FULLY REDUX BACKED.
+ *
+ * This version replaces React Query (useQuery/useMutation) with Redux Toolkit.
+ * It uses the `fetchUrl` to look up corresponding actions/selectors in the `resourceRegistry`.
+ * Components (CollegesPage, EventsPage, etc.) remain UNCHANGED.
+ */
 export default function CrudPage({ 
   title, 
   description, 
@@ -23,7 +30,7 @@ export default function CrudPage({
   addLabel,
   initialData = [] 
 }) {
-  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -31,82 +38,102 @@ export default function CrudPage({
   const [deleteId, setDeleteId] = useState(null);
   const [formData, setFormData] = useState({});
 
-  // Fetch Data
-  const { data: apiResponse, isLoading, error } = useQuery({
-    queryKey: [fetchUrl],
-    queryFn: async () => {
-      const response = await apiClient.get(fetchUrl);
-      return response.data;
-    },
-    enabled: !!fetchUrl,
-  });
+  // 1. Resolve Redux Resource for this page
+  // fetchUrl usually looks like "/api/colleges"
+  const resourceKey = fetchUrl?.replace(/^\/api\//, "");
+  const resource = resourceRegistry[resourceKey];
 
-  const data = fetchUrl ? (apiResponse?.data || []) : initialData;
+  // 2. Main data selection from Redux
+  const reduxData = useSelector((state) => (resource ? resource.selector(state) : null));
+  const isLoading = reduxData?.isLoading || false;
+  const error = reduxData?.error || null;
+  const dataList = reduxData?.list || initialData;
 
-  // Fetch Options for Selects
-  const optionQueries = useQueries({
-    queries: fields
-      .filter(f => f.type === "select" && f.optionsUrl)
-      .map(f => ({
-        queryKey: [f.optionsUrl],
-        queryFn: async () => {
-          const res = await apiClient.get(f.optionsUrl);
-          return { key: f.key, data: res.data.data };
-        }
-      }))
-  });
-
+  // 3. Select Options mapping for dropdowns (Dynamic based on fields)
+  // Each field with optionsUrl is mapped to a Redux resource
+  const allState = useSelector((state) => state);
   const getOptions = (field) => {
-    if (field.options) return field.options;
-    const query = optionQueries.find(q => q.data?.key === field.key);
-    if (!query?.data?.data) return [];
-    return query.data.data.map(opt => ({
-      label: opt[field.optionLabel || "name"] || opt.name,
-      value: opt[field.optionValue || "_id"] || opt._id
-    }));
+    if (field.options) return field.options.map(o => typeof o === "string" ? { label: o, value: o } : o);
+    
+    const optResourceKey = field.optionsUrl?.replace(/^\/api\//, "");
+    const optResource = resourceRegistry[optResourceKey];
+    
+    if (optResource) {
+      const optData = optResource.selector(allState);
+      const list = optData?.list || [];
+      return list.map(opt => ({
+        label: opt[field.optionLabel || "name"] || opt.name,
+        value: opt[field.optionValue || "_id"] || opt._id
+      }));
+    }
+    return [];
   };
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: (newData) => apiClient.post(fetchUrl, newData),
-    onSuccess: () => {
-      queryClient.invalidateQueries([fetchUrl]);
-      toast.success(`${title.replace(/s$/, "")} added successfully`);
+  // 4. Fetch main data and dropdown options on mount
+  useEffect(() => {
+    if (resource?.fetch) {
+      dispatch(resource.fetch());
+    }
+
+    // Prefetch options for any select field that has an optionsUrl
+    fields.forEach(field => {
+      if (field.type === "select" && field.optionsUrl) {
+        const optResourceKey = field.optionsUrl.replace(/^\/api\//, "");
+        const optResource = resourceRegistry[optResourceKey];
+        if (optResource?.fetch) {
+          dispatch(optResource.fetch());
+        }
+      }
+    });
+  }, [dispatch, fetchUrl, resourceKey, fields]); // Re-fetch only when necessary
+
+  // CRUD Handlers
+  const handleSave = async () => {
+    if (!resource) {
+      toast.error("Resource not found in registry");
+      return;
+    }
+
+    let result;
+    if (editId) {
+      if (resource.update) {
+        result = await dispatch(resource.update({ id: editId, data: formData }));
+      } else if (resource.create) {
+        // Fallback for some modules that use POST for everything
+        result = await dispatch(resource.create(formData));
+      }
+    } else {
+      if (resource.create) {
+        result = await dispatch(resource.create(formData));
+      }
+    }
+
+    if (result && !result.error) {
       setDialogOpen(false);
-    },
-    onError: (err) => toast.error(err.response?.data?.message || `Failed to add ${title}`),
-  });
+    }
+  };
 
-  const updateMutation = useMutation({
-    mutationFn: (updatedData) => apiClient.put(`${fetchUrl}/${editId}`, updatedData),
-    onSuccess: () => {
-      queryClient.invalidateQueries([fetchUrl]);
-      toast.success(`${title.replace(/s$/, "")} updated successfully`);
-      setDialogOpen(false);
-    },
-    onError: (err) => toast.error(err.response?.data?.message || `Failed to update ${title}`),
-  });
+  const handleDelete = async () => {
+    if (resource?.delete && deleteId) {
+      const result = await dispatch(resource.delete(deleteId));
+      if (!result.error) {
+        setDeleteOpen(false);
+      }
+    }
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`${fetchUrl}/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries([fetchUrl]);
-      toast.success(`${title.replace(/s$/, "")} deleted successfully`);
-      setDeleteOpen(false);
-    },
-    onError: (err) => toast.error(err.response?.data?.message || `Failed to delete ${title}`),
-  });
-
-  const filtered = data.filter((row) =>
-    Object.values(row).some((v) =>
-      String(v).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filtered = useMemo(() => {
+    return dataList.filter((row) =>
+      Object.values(row).some((v) =>
+        String(v).toLowerCase().includes(search.toLowerCase())
+      )
+    );
+  }, [dataList, search]);
 
   const openAdd = () => {
     setEditId(null);
     const empty = {};
-    fields.forEach((f) => (empty[f.key] = ""));
+    fields.forEach((f) => (empty[f.key] = f.defaultValue || ""));
     setFormData(empty);
     setDialogOpen(true);
   };
@@ -116,26 +143,13 @@ export default function CrudPage({
     const initialFormData = { ...row };
     // Flatten nested objects if needed for initial display (e.g., college_id._id)
     fields.forEach(f => {
-      if (typeof row[f.key] === "object" && row[f.key]?._id) {
-        initialFormData[f.key] = row[f.key]._id;
+      const val = row[f.key];
+      if (val && typeof val === "object" && val._id) {
+        initialFormData[f.key] = val._id;
       }
     });
     setFormData(initialFormData);
     setDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (editId) {
-      updateMutation.mutate(formData);
-    } else {
-      createMutation.mutate(formData);
-    }
-  };
-
-  const handleDelete = () => {
-    if (deleteId) {
-      deleteMutation.mutate(deleteId);
-    }
   };
 
   const badgeVariant = (col, value) => {
@@ -153,10 +167,11 @@ export default function CrudPage({
     // Handle nested display if key contains dot (like college_id.name)
     if (col.key.includes(".")) {
       const keys = col.key.split(".");
-      value = row;
+      let v = row;
       for (const k of keys) {
-        value = value?.[k];
+        v = v?.[k];
       }
+      value = v;
     } else if (typeof value === "object" && value?.name) {
       value = value.name;
     }
@@ -164,11 +179,11 @@ export default function CrudPage({
     if (col.badge) {
       return (
         <Badge variant={badgeVariant(col, value)}>
-          {value}
+          {value || "N/A"}
         </Badge>
       );
     }
-    return value;
+    return value || "-";
   };
 
   return (
@@ -198,15 +213,15 @@ export default function CrudPage({
         </div>
 
         <div className="bg-card rounded-xl shadow-card border border-border overflow-hidden">
-          {isLoading ? (
+          {isLoading && dataList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Loading data...</p>
             </div>
-          ) : error ? (
+          ) : error && dataList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-destructive">
               <p className="text-sm font-medium">Error loading data</p>
-              <p className="text-xs">{error.response?.data?.message || error.message}</p>
+              <p className="text-xs">{error}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -234,7 +249,7 @@ export default function CrudPage({
                     </TableRow>
                   ) : (
                     filtered.map((row, i) => (
-                      <TableRow key={i}>
+                      <TableRow key={row._id || i}>
                         {columns.map((col) => (
                           <TableCell key={col.key} className="text-sm">
                             {renderCell(row, col)}
@@ -275,13 +290,13 @@ export default function CrudPage({
           <DialogHeader>
             <DialogTitle>{editId ? "Edit" : "Add"} {title.replace(/s$/, "")}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             {fields.map((field) => (
               <div key={field.key} className="grid gap-2">
                 <Label htmlFor={field.key}>{field.label}</Label>
                 {field.type === "select" ? (
                   <Select
-                    value={formData[field.key] || ""}
+                    value={String(formData[field.key] || "")}
                     onValueChange={(v) => setFormData({ ...formData, [field.key]: v })}
                   >
                     <SelectTrigger>
@@ -289,7 +304,7 @@ export default function CrudPage({
                     </SelectTrigger>
                     <SelectContent>
                       {getOptions(field).map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
+                        <SelectItem key={opt.value} value={String(opt.value)}>
                           {opt.label}
                         </SelectItem>
                       ))}
@@ -321,9 +336,9 @@ export default function CrudPage({
             </DialogClose>
             <Button 
               onClick={handleSave} 
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={isLoading}
             >
-              {(createMutation.isPending || updateMutation.isPending) && (
+              {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               {editId ? "Update" : "Add"}
@@ -345,10 +360,10 @@ export default function CrudPage({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete} 
-              disabled={deleteMutation.isPending}
+              disabled={isLoading}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending && (
+              {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Delete

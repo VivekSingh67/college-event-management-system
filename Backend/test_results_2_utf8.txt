@@ -1,0 +1,116 @@
+﻿
+═══ 1. AUTH ═══
+  PASS  [200] Login as super_admin
+  PASS  [401] Login wrong password → 401
+  PASS  [201] Register new student → 201
+  PASS  [401] Protected route without token → 401
+
+═══ 2. COLLEGES ═══
+  PASS  [201] Create college → 201
+  PASS  [200] Get all colleges → 200
+  PASS  [200] Get college by ID → 200
+  PASS  [200] Update college → 200
+
+═══ 3. BRANCHES ═══
+  PASS  [201] Create branch → 201
+  PASS  [200] Get all branches → 200
+
+═══ 4. DEPARTMENTS ═══
+  PASS  [201] Create department → 201
+  PASS  [200] Get all departments → 200
+
+═══ 5. BATCHES ═══
+  PASS  [201] Create batch → 201
+  PASS  [200] Get all batches → 200
+
+═══ 6. USERS ═══
+  PASS  [200] Get /me → 200
+  PASS  [200] Get all users → 200
+
+═══ 7. ADMINS ═══
+  PASS  [201] Create admin (dual-collection) → 201
+  PASS  [200] Get all admins → 200
+  PASS  [200] Get admin by ID → 200
+  PASS  [200] Update admin → 200
+
+═══ 8. HODs ═══
+  PASS  [201] Create HOD (dual-collection) → 201
+  PASS  [200] Get all HODs → 200
+
+═══ 9. STUDENTS ═══
+node :   FAIL  [500] Create 
+student (dual-collection) → 
+201
+At line:1 char:1
++ node --experimental-fetch 
+api-test.js > 
+test_results_2.txt 2>&1; Get- 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (  FAIL  [  
+  500] C...llection) → 201:   
+ String) [], RemoteExcepti    
+on
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+        Error Data: {
+  "success": false,
+  "message": "Server error",
+  "error": "Student 
+validation failed: year: `1` 
+is not a valid enum value for 
+path `year`., gender: `Male` 
+is not a valid enum value for 
+path `gender`."
+}
+  PASS  [200] Get all students → 200
+
+═══ 10. FACULTY ═══
+  PASS  [201] Create faculty (dual-collection) → 201
+  PASS  [200] Get all faculty → 200
+
+═══ 11. EVENTS ═══
+  PASS  [201] Create event → 201
+  PASS  [200] Get all events → 200
+  PASS  [200] Get event by ID → 200
+  PASS  [200] Update event → 200
+
+═══ 12. EVENT CATEGORIES ═══
+  FAIL  [400] Create event 
+category → 201
+        Error Data: {
+  "success": false,
+  "message": "name and 
+created_by are required"
+}
+  PASS  [200] Get all event categories → 200
+
+═══ 13. EVENT VENUES ═══
+  PASS  [201] Create event venue → 201
+  PASS  [200] Get all venues → 200
+
+═══ 14. ANNOUNCEMENTS ═══
+  PASS  [201] Create announcement → 201
+  PASS  [200] Get all announcements → 200
+
+═══ 15. NOTIFICATIONS ═══
+  PASS  [201] Create notification → 201
+  PASS  [200] Get all notifications → 200
+
+═══ 16. ACTIVITY LOGS ═══
+  PASS  [201] Create activity log → 201
+  PASS  [200] Get all activity logs → 200
+
+═══ 17. DELETE CLEANUP ═══
+  PASS  [200] Delete event → 200
+  PASS  [200] Delete admin + linked user → 200
+  PASS  [200] Delete HOD + linked user → 200
+
+══════════════════════════════════════════════════
+  TOTAL: 43 tests | ✅ PASS: 41 | ❌ FAIL: 2
+══════════════════════════════════════════════════
+

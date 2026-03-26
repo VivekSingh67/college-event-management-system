@@ -45,7 +45,7 @@ export default function AttendancePage() {
       description="Track event attendance" 
       columns={columns} 
       fields={fields} 
-      fetchUrl="/api/attendance" 
+      fetchUrl="/api/attendance/me"
     />
   );
 }

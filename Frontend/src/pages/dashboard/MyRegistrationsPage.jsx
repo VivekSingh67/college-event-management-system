@@ -4,6 +4,7 @@ const columns = [
   { key: "event_id.event_title", label: "Event" },
   { key: "event_id.event_date", label: "Date" },
   { key: "event_id.location", label: "Venue" },
+  { key: "event_id.event_type", label: "Category" },
   { key: "payment_status", label: "Payment" },
   { key: "status", label: "Status", badge: true },
 ];

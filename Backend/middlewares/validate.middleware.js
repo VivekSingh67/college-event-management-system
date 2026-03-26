@@ -44,6 +44,10 @@ const validate = (schemaName) => {
       case "college": {
         if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "college name is required" });
         if (!body.short_name || !body.short_name.trim()) errors.push({ field: "short_name", message: "short_name is required" });
+        if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid college email is required" });
+        if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
+        if (!body.city || !body.city.trim()) errors.push({ field: "city", message: "city is required" });
+        if (!body.state || !body.state.trim()) errors.push({ field: "state", message: "state is required" });
         break;
       }
       case "branch": {
@@ -67,7 +71,11 @@ const validate = (schemaName) => {
         break;
       }
       case "student": {
-        ["user_id", "branch_id", "department_id", "batch_id"].forEach((ref) => {
+        if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
+        if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
+        if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
+        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        ["branch_id", "department_id", "batch_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
         if (!body.enrollment_no || !body.enrollment_no.trim()) errors.push({ field: "enrollment_no", message: "enrollment_no is required" });
@@ -75,7 +83,11 @@ const validate = (schemaName) => {
         break;
       }
       case "faculty": {
-        ["user_id", "branch_id", "department_id"].forEach((ref) => {
+        if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
+        if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
+        if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
+        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        ["branch_id", "department_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
         if (!body.employee_id || !body.employee_id.trim()) errors.push({ field: "employee_id", message: "employee_id is required" });
@@ -83,7 +95,11 @@ const validate = (schemaName) => {
         break;
       }
       case "hod": {
-        ["user_id", "branch_id", "department_id"].forEach((ref) => {
+        if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
+        if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
+        if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
+        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        ["branch_id", "department_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
         if (!body.employee_id || !body.employee_id.trim()) errors.push({ field: "employee_id", message: "employee_id is required" });
@@ -91,7 +107,11 @@ const validate = (schemaName) => {
         break;
       }
       case "admin": {
-        ["user_id", "college_id", "branch_id"].forEach((ref) => {
+        if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
+        if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
+        if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
+        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        ["college_id", "branch_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
         if (!body.employee_id || !body.employee_id.trim()) errors.push({ field: "employee_id", message: "employee_id is required" });
@@ -125,6 +145,11 @@ const validate = (schemaName) => {
         if (!body.event_id || !isValidObjectId(body.event_id)) errors.push({ field: "event_id", message: "A valid event_id is required" });
         if (!body.approved_by || !isValidObjectId(body.approved_by)) errors.push({ field: "approved_by", message: "A valid approved_by is required" });
         if (!body.approver_role) errors.push({ field: "approver_role", message: "approver_role is required" });
+        break;
+      }
+      case "eventCategory": {
+        if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "category name is required" });
+        if (!body.created_by || !isValidObjectId(body.created_by)) errors.push({ field: "created_by", message: "A valid created_by (ObjectId) is required" });
         break;
       }
       case "eventVenue": {

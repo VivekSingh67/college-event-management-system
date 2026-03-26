@@ -17,6 +17,14 @@ const register = async (req, res) => {
       });
     }
 
+    const isExistingPhone = await userModel.findOne({ phone });
+    if (isExistingPhone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number already exists",
+      });
+    }
+
     const hashedPassword = await hashPassword(password);
 
     const user = await userModel.create({
@@ -130,4 +138,31 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, logout };
+const updatePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user._id;
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const isMatch = await comparePassword(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Incorrect old password" });
+    }
+
+    user.password = await hashPassword(newPassword);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { register, login, logout, updatePassword };

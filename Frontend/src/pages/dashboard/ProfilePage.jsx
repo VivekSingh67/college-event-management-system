@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +8,22 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import apiClient from "@/lib/apiClient";
 import { Loader2 } from "lucide-react";
+import { updatePasswordUser } from "@/redux/slices/authSlice";
+import { fetchStudentMe, selectStudentProfile, updateUser } from "@/redux/slices/coreSlice";
 
+/**
+ * ProfilePage — FULLY REDUX BACKED.
+ *
+ * Removes direct API calls and React Query hooks. 
+ * Uses Redux thunks for fetching and updating profile/password.
+ */
 export default function ProfilePage() {
   const { user } = useAuth();
+  const dispatch = useDispatch();
+  const studentProfile = useSelector(selectStudentProfile);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,13 +35,14 @@ export default function ProfilePage() {
 
   const [password, setPassword] = useState({ current: "", newPass: "", confirm: "" });
 
-  // Fetch student profile if user is a student
-  const { data: studentData, isLoading: studentLoading } = useQuery({
-    queryKey: ["student-me"],
-    queryFn: () => apiClient.get("/api/students/me").then(res => res.data.data),
-    enabled: user?.role === "student"
-  });
+  // Load profile data on mount
+  useEffect(() => {
+    if (user?.role === "student") {
+      dispatch(fetchStudentMe());
+    }
+  }, [dispatch, user?.role]);
 
+  // Sync form data with Redux/Auth state
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
@@ -40,58 +52,43 @@ export default function ProfilePage() {
         phone: user.phone || ""
       }));
     }
-    if (studentData) {
+    if (studentProfile) {
       setFormData(prev => ({
         ...prev,
-        department: studentData.department_id?.department_name || "",
-        batch: studentData.batch_id?.batch_name || "",
-        rollNumber: studentData.enrollment_no || ""
+        department: studentProfile.department_id?.department_name || "",
+        batch: studentProfile.batch_id?.batch_name || "",
+        rollNumber: studentProfile.enrollment_no || ""
       }));
     }
-  }, [user, studentData]);
+  }, [user, studentProfile]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => apiClient.put(`/api/users/${user._id}`, data),
-    onSuccess: () => toast.success("Profile updated successfully"),
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update profile")
-  });
-
-  const passwordMutation = useMutation({
-    mutationFn: (data) => apiClient.put("/api/auth/update-password", data),
-    onSuccess: () => {
-      toast.success("Password changed successfully");
-      setPassword({ current: "", newPass: "", confirm: "" });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to change password")
-  });
-
-  const handleUpdate = () => {
-    updateMutation.mutate({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone
-    });
+  const handleUpdate = async () => {
+    setIsLoading(true);
+    await dispatch(updateUser({ 
+      id: user._id, 
+      data: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone
+      } 
+    }));
+    setIsLoading(false);
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (password.newPass !== password.confirm) {
       return toast.error("Passwords do not match");
     }
-    passwordMutation.mutate({
+    setIsLoading(true);
+    const result = await dispatch(updatePasswordUser({
       currentPassword: password.current,
       newPassword: password.newPass
-    });
+    }));
+    setIsLoading(false);
+    if (!result.error) {
+      setPassword({ current: "", newPass: "", confirm: "" });
+    }
   };
-
-  if (studentLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
@@ -105,7 +102,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-                {formData.name.split(" ").map(n => n[0]).join("")}
+                {formData.name.split(" ").map(n => n?.[0]).join("") || "U"}
               </AvatarFallback>
             </Avatar>
             <div>
@@ -165,8 +162,8 @@ export default function ProfilePage() {
               )}
             </div>
             <div className="flex justify-end mt-4">
-              <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
-                {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleUpdate} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </div>
@@ -208,9 +205,9 @@ export default function ProfilePage() {
               <Button 
                 variant="outline" 
                 onClick={handlePasswordChange}
-                disabled={passwordMutation.isPending}
+                disabled={isLoading}
               >
-                {passwordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Password
               </Button>
             </div>

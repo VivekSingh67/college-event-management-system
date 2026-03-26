@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createStudent, getAllStudents, getStudentById, updateStudent, deleteStudent } = require("../controllers/student.controller");
+const { createStudent, getAllStudents, getStudentById, updateStudent, deleteStudent, getStudentProfile } = require("../controllers/student.controller");
 const { protect } = require("../middlewares/auth.middleware");
 const { adminOnly, adminOrHod, staffOnly } = require("../middlewares/role.middleware");
 const { validate } = require("../middlewares/validate.middleware");

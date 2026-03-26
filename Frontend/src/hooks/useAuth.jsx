@@ -1,70 +1,63 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import apiClient from "@/lib/apiClient";
-import { toast } from "sonner";
+/**
+ * useAuth hook — Redux-backed.
+ *
+ * Provides the same API surface as before (user, loading, login, register, logout)
+ * so all existing consumers (Dashboard, ProfilePage, etc.) require ZERO changes.
+ *
+ * Internally, this reads from Redux store and dispatches auth thunks.
+ */
+import { createContext, useContext } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  loginUser,
+  registerUser,
+  logoutUser,
+  selectUser,
+  selectAuthLoading,
+} from "@/redux/slices/authSlice";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const loading = useSelector(selectAuthLoading);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
-
+  /**
+   * Login — dispatches Redux thunk.
+   * Returns { success: boolean } for backwards-compatible consumers (Login.jsx).
+   */
   const login = async (email, password) => {
-    try {
-      const response = await apiClient.post("/auth/login", { email, password });
-      const { user, accessToken } = response.data;
-      
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("accessToken", accessToken);
-      toast.success("Login successful");
+    const result = await dispatch(loginUser({ email, password }));
+    if (loginUser.fulfilled.match(result)) {
       return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || "Login failed";
-      toast.error(message);
-      return { success: false, message };
     }
+    return { success: false, message: result.payload };
   };
 
+  /**
+   * Register — dispatches Redux thunk.
+   * Returns { success: boolean } for backwards-compatible consumers (Register.jsx).
+   * Always forces role="student".
+   */
   const register = async (userData) => {
-    try {
-      const response = await apiClient.post("/auth/register", userData);
-      const { user, accessToken } = response.data;
-      
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("accessToken", accessToken);
-      toast.success("Registration successful");
+    const result = await dispatch(registerUser(userData));
+    if (registerUser.fulfilled.match(result)) {
       return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || "Registration failed";
-      toast.error(message);
-      return { success: false, message };
     }
+    return { success: false, message: result.payload };
   };
 
+  /**
+   * Logout — dispatches Redux thunk.
+   */
   const logout = async () => {
-    try {
-      await apiClient.post("/auth/logout");
-      setUser(null);
-      localStorage.removeItem("user");
-      localStorage.removeItem("accessToken");
-      toast.success("Logged out successfully");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    await dispatch(logoutUser());
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

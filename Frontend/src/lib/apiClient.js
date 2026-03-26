@@ -8,7 +8,8 @@ const apiClient = axios.create({
   },
 });
 
-// Add a request interceptor to include the access token
+// ─── Request Interceptor ──────────────────────────────────────────────────────
+// Attach the access token from localStorage to every outgoing request.
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -18,6 +19,25 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// ─── Response Interceptor ─────────────────────────────────────────────────────
+// Handle 401 Unauthorized errors globally:
+// - Clear stale tokens from storage
+// - Redirect to /login so the user can re-authenticate
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Avoid redirect loops if we're already on the login page
+      if (!window.location.pathname.includes("/login")) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default apiClient;

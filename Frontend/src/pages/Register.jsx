@@ -24,7 +24,8 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const result = await register(formData);
+    // role is always "student" — the Redux thunk enforces this on all paths
+    const result = await register({ ...formData, role: "student" });
     setIsLoading(false);
     if (result.success) {
       navigate("/dashboard");
@@ -76,6 +77,8 @@ export default function RegisterPage() {
               value={formData.phone}
               onChange={handleChange}
               required
+              pattern="\d{10}"
+              title="Enter a valid 10-digit phone number"
             />
           </div>
           <div className="space-y-2">
@@ -87,6 +90,8 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               required
+              minLength={6}
+              title="Password must be at least 6 characters"
             />
           </div>
           <Button className="w-full" type="submit" disabled={isLoading}>

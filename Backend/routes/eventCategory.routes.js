@@ -6,7 +6,7 @@ const { adminOnly, adminOrHod } = require("../middlewares/role.middleware");
 const { validate } = require("../middlewares/validate.middleware");
 
 // POST   /api/event-categories       — admin/hod
-router.post("/", protect, adminOrHod, createEventCategory);
+router.post("/", protect, adminOrHod, validate("eventCategory"), createEventCategory);
 
 // GET    /api/event-categories       — public
 router.get("/", getAllEventCategories);
