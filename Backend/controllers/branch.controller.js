@@ -72,7 +72,7 @@ const getAllBranches = async (req, res) => {
     if (req.query.campus_type) filter.campus_type = req.query.campus_type;
 
     const branches = await Branch.find(filter)
-      .populate("college_id", "college_name college_code")
+      .populate("college_id", "name short_name")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -102,7 +102,7 @@ const getBranchById = async (req, res) => {
 
     const branch = await Branch.findById(id).populate(
       "college_id",
-      "college_name college_code"
+      "name short_name"
     );
 
     if (!branch) {
@@ -188,7 +188,7 @@ const updateBranch = async (req, res) => {
         new: true,          
         runValidators: true, 
       }
-    ).populate("college_id", "college_name college_code");
+    ).populate("college_id", "name short_name");
 
     if (!updatedBranch) {
       return res.status(404).json({

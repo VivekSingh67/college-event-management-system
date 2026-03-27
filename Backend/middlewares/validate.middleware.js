@@ -86,7 +86,7 @@ const validate = (schemaName) => {
         if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
         if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
         if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
-        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        if (body.password && body.password.length < 6 && body.password !== "1") errors.push({ field: "password", message: "password must be at least 6 characters (or system default '1')" });
         ["branch_id", "department_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
@@ -98,7 +98,8 @@ const validate = (schemaName) => {
         if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
         if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
         if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
-        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        // Password is now optional in validation because controller has a default
+        if (body.password && body.password.length < 6 && body.password !== "1") errors.push({ field: "password", message: "password must be at least 6 characters (or system default '1')" });
         ["branch_id", "department_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
@@ -110,7 +111,7 @@ const validate = (schemaName) => {
         if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "name is required" });
         if (!body.email || !isValidEmail(body.email)) errors.push({ field: "email", message: "A valid email is required" });
         if (!body.phone || !isValidPhone(body.phone)) errors.push({ field: "phone", message: "A valid 10-digit phone is required" });
-        if (!body.password || body.password.length < 6) errors.push({ field: "password", message: "password must be at least 6 characters" });
+        if (body.password && body.password.length < 6 && body.password !== "1") errors.push({ field: "password", message: "password must be at least 6 characters (or system default '1')" });
         ["college_id", "branch_id"].forEach((ref) => {
           if (!body[ref] || !isValidObjectId(body[ref])) errors.push({ field: ref, message: `A valid ${ref} (ObjectId) is required` });
         });
@@ -128,12 +129,6 @@ const validate = (schemaName) => {
           if (!validTypes.includes(body.event_type)) errors.push({ field: "event_type", message: `event_type must be one of: ${validTypes.join(", ")}` });
         }
         if (!body.event_date) errors.push({ field: "event_date", message: "event_date is required" });
-        if (!body.created_by || !isValidObjectId(body.created_by)) errors.push({ field: "created_by", message: "A valid created_by (ObjectId) is required" });
-        if (!body.created_by_role) {
-          errors.push({ field: "created_by_role", message: "created_by_role is required" });
-        } else {
-          if (!["admin", "hod", "faculty"].includes(body.created_by_role)) errors.push({ field: "created_by_role", message: "created_by_role must be admin, hod, or faculty" });
-        }
         break;
       }
       case "eventRegistration": {
@@ -149,7 +144,6 @@ const validate = (schemaName) => {
       }
       case "eventCategory": {
         if (!body.name || !body.name.trim()) errors.push({ field: "name", message: "category name is required" });
-        if (!body.created_by || !isValidObjectId(body.created_by)) errors.push({ field: "created_by", message: "A valid created_by (ObjectId) is required" });
         break;
       }
       case "eventVenue": {
@@ -162,8 +156,6 @@ const validate = (schemaName) => {
         if (!body.message || !body.message.trim()) errors.push({ field: "message", message: "message is required" });
         if (!body.branch_id || !isValidObjectId(body.branch_id)) errors.push({ field: "branch_id", message: "A valid branch_id is required" });
         if (!body.publish_date) errors.push({ field: "publish_date", message: "publish_date is required" });
-        if (!body.created_by || !isValidObjectId(body.created_by)) errors.push({ field: "created_by", message: "A valid created_by is required" });
-        if (!body.created_by_role) errors.push({ field: "created_by_role", message: "created_by_role is required" });
         break;
       }
       case "certificate": {

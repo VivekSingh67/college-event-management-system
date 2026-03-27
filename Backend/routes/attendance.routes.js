@@ -7,6 +7,9 @@ const { staffOnly, adminOrHod, adminOnly } = require("../middlewares/role.middle
 // POST   /api/attendance       — staff marks attendance
 router.post("/", protect, staffOnly, createAttendance);
 
+// GET    /api/attendance       — staff can view attendance list
+router.get("/", protect, staffOnly, getAllAttendance);
+
 // GET    /api/attendance/me    — get current student attendance
 router.get("/me", protect, getMyAttendance);
 

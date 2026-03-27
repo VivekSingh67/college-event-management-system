@@ -4,13 +4,18 @@ const Announcement = require("../models/Announcement.model");
 // Create Announcement
 const createAnnouncement = async (req, res) => {
   try {
-    const { title, message, branch_id, department_id, announcement_type, publish_date, expiry_date, created_by, created_by_role, attachment, status } = req.body;
+    const { title, message, branch_id, department_id, announcement_type, publish_date, expiry_date, attachment, status } = req.body;
 
-    if (!title || !message || !branch_id || !publish_date || !created_by || !created_by_role) {
-      return res.status(400).json({ success: false, message: "title, message, branch_id, publish_date, created_by, and created_by_role are required" });
+    if (!title || !message || !branch_id || !publish_date) {
+      return res.status(400).json({ success: false, message: "title, message, branch_id, and publish_date are required" });
     }
 
-    const announcement = await Announcement.create({ title, message, branch_id, department_id, announcement_type, publish_date, expiry_date, created_by, created_by_role, attachment, status });
+    const announcement = await Announcement.create({ 
+      title, message, branch_id, department_id, announcement_type, publish_date, expiry_date, 
+      created_by: req.user._id, 
+      created_by_role: req.user.role, 
+      attachment, status 
+    });
 
     return res.status(201).json({ success: true, message: "Announcement created successfully", data: announcement });
   } catch (error) {

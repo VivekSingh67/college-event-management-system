@@ -27,6 +27,7 @@ export default function CrudPage({
   fields, 
   fetchUrl, 
   readOnly = false, 
+  hideAdd = false,
   addLabel,
   initialData = [] 
 }) {
@@ -110,6 +111,10 @@ export default function CrudPage({
 
     if (result && !result.error) {
       setDialogOpen(false);
+      // Re-fetch list to get fully populated nested data and ensure consistency
+      if (resource.fetch) {
+        dispatch(resource.fetch());
+      }
     }
   };
 
@@ -133,7 +138,23 @@ export default function CrudPage({
   const openAdd = () => {
     setEditId(null);
     const empty = {};
-    fields.forEach((f) => (empty[f.key] = f.defaultValue || ""));
+    fields.forEach((f) => {
+      // Set default values from field definition
+      if (f.defaultValue !== undefined) {
+        empty[f.key] = f.defaultValue;
+      } else if (f.key === "status" && f.options?.includes("active")) {
+        // Default status to active if available
+        empty[f.key] = "active";
+      } else {
+        empty[f.key] = "";
+      }
+    });
+
+    // Special case for default password if requested
+    if (["admins", "hods", "faculty"].includes(resourceKey)) {
+      empty["password"] = "1";
+    }
+
     setFormData(empty);
     setDialogOpen(true);
   };
@@ -141,11 +162,32 @@ export default function CrudPage({
   const openEdit = (row) => {
     setEditId(row._id);
     const initialFormData = { ...row };
-    // Flatten nested objects if needed for initial display (e.g., college_id._id)
+    
+    // Improved mapping for nested objects and flattening
     fields.forEach(f => {
-      const val = row[f.key];
-      if (val && typeof val === "object" && val._id) {
-        initialFormData[f.key] = val._id;
+      // 1. Check if the key is nested (e.g. user_id.name)
+      if (f.key.includes(".")) {
+        const path = f.key.split(".");
+        let val = row;
+        for (const segment of path) {
+          val = val?.[segment];
+        }
+        initialFormData[f.key] = val;
+      } else {
+        // 2. Handle cases where the form key (e.g. "name") is nested in the data (e.g. "user_id.name")
+        // Check for common patterns like user_id, college_id, etc.
+        const parentKeys = ["user_id", "college_id", "branch_id", "department_id", "batch_id"];
+        for (const pk of parentKeys) {
+          if (row[pk] && typeof row[pk] === "object" && row[pk][f.key] !== undefined) {
+            initialFormData[f.key] = row[pk][f.key];
+          }
+        }
+
+        // 3. Fallback: if value is an object with _id, use the _id (for selects)
+        const val = row[f.key];
+        if (val && typeof val === "object" && val._id) {
+          initialFormData[f.key] = val._id;
+        }
       }
     });
     setFormData(initialFormData);
@@ -204,7 +246,7 @@ export default function CrudPage({
                 className="pl-9 w-[200px]"
               />
             </div>
-            {!readOnly && (
+            {!readOnly && !hideAdd && (
               <Button onClick={openAdd} className="gap-2">
                 <Plus className="h-4 w-4" /> {addLabel || `Add ${title.replace(/s$/, "")}`}
               </Button>
@@ -291,44 +333,47 @@ export default function CrudPage({
             <DialogTitle>{editId ? "Edit" : "Add"} {title.replace(/s$/, "")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-            {fields.map((field) => (
-              <div key={field.key} className="grid gap-2">
-                <Label htmlFor={field.key}>{field.label}</Label>
-                {field.type === "select" ? (
-                  <Select
-                    value={String(formData[field.key] || "")}
-                    onValueChange={(v) => setFormData({ ...formData, [field.key]: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getOptions(field).map((opt) => (
-                        <SelectItem key={opt.value} value={String(opt.value)}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : field.type === "textarea" ? (
-                  <textarea
-                    id={field.key}
-                    value={formData[field.key] || ""}
-                    onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                    placeholder={field.placeholder}
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  />
-                ) : (
-                  <Input
-                    id={field.key}
-                    type={field.type || "text"}
-                    value={formData[field.key] || ""}
-                    onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                    placeholder={field.placeholder}
-                  />
-                )}
-              </div>
-            ))}
+            {fields.map((field) => {
+              if (field.hidden) return null;
+              return (
+                <div key={field.key} className="grid gap-2">
+                  <Label htmlFor={field.key}>{field.label}</Label>
+                  {field.type === "select" ? (
+                    <Select
+                      value={String(formData[field.key] || "")}
+                      onValueChange={(v) => setFormData({ ...formData, [field.key]: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getOptions(field).map((opt) => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : field.type === "textarea" ? (
+                    <textarea
+                      id={field.key}
+                      value={formData[field.key] || ""}
+                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  ) : (
+                    <Input
+                      id={field.key}
+                      type={field.type || "text"}
+                      value={formData[field.key] || ""}
+                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <DialogFooter>
             <DialogClose asChild>

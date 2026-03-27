@@ -30,16 +30,6 @@ const fields = [
   { key: "announcement_type", label: "Type", type: "select", options: ["event", "notice", "information", "academic"] },
   { key: "publish_date", label: "Publish Date", type: "date", required: true },
   { key: "expiry_date", label: "Expiry Date", type: "date" },
-  { 
-    key: "created_by", 
-    label: "Created By", 
-    type: "select", 
-    optionsUrl: "/api/users", 
-    optionLabel: "name", 
-    optionValue: "_id",
-    required: true 
-  },
-  { key: "created_by_role", label: "Creator Role", type: "select", options: ["admin", "hod", "faculty"] },
   { key: "status", label: "Status", type: "select", options: ["active", "inactive"] },
 ];
 

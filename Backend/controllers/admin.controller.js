@@ -16,8 +16,11 @@ const createAdmin = async (req, res) => {
       college_id, branch_id, employee_id, designation, joining_date, address, status,
     } = req.body;
 
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({ success: false, message: "name, email, phone, and password are required" });
+    const finalPassword = password || "1";
+    const finalDesignation = designation || "admin";
+
+    if (!name || !email || !phone) {
+      return res.status(400).json({ success: false, message: "name, email, and phone are required" });
     }
     if (!college_id || !branch_id || !employee_id || !joining_date) {
       return res.status(400).json({ success: false, message: "college_id, branch_id, employee_id, and joining_date are required" });
@@ -36,7 +39,7 @@ const createAdmin = async (req, res) => {
     }
 
     // 1. Create User record
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(finalPassword);
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -51,14 +54,14 @@ const createAdmin = async (req, res) => {
       college_id,
       branch_id,
       employee_id,
-      designation,
+      designation: finalDesignation,
       joining_date,
       address,
       status: status || "active",
     });
 
     // 3. Send credentials email (non-blocking)
-    sendCredentialsEmail({ to: email, name, role: "admin", password });
+    sendCredentialsEmail({ to: email, name, role: "admin", password: finalPassword });
 
     return res.status(201).json({
       success: true,

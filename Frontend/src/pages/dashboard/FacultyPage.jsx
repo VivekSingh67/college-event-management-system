@@ -9,15 +9,10 @@ const columns = [
 ];
 
 const fields = [
-  { 
-    key: "user_id", 
-    label: "User Account", 
-    type: "select", 
-    optionsUrl: "/api/users", 
-    optionLabel: "name", 
-    optionValue: "_id",
-    required: true 
-  },
+  { key: "name", label: "Full Name", required: true, placeholder: "e.g. Dr. Amit Shah" },
+  { key: "email", label: "Email Address", type: "email", required: true, placeholder: "e.g. amit@cems.com" },
+  { key: "phone", label: "Phone Number", required: true, placeholder: "10-digit number" },
+  { key: "password", label: "Password", type: "password", defaultValue: "1", required: true, placeholder: "Default: 1" },
   { key: "employee_id", label: "Employee ID", required: true, placeholder: "e.g. FAC001" },
   { 
     key: "branch_id", 

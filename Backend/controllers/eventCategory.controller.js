@@ -4,10 +4,10 @@ const EventCategory = require("../models/EventCategory.model");
 // Create Event Category
 const createEventCategory = async (req, res) => {
   try {
-    const { name, description, status, created_by } = req.body;
+    const { name, description, status } = req.body;
 
-    if (!name || !created_by) {
-      return res.status(400).json({ success: false, message: "name and created_by are required" });
+    if (!name) {
+      return res.status(400).json({ success: false, message: "name is required" });
     }
 
     const existing = await EventCategory.findOne({ name });
@@ -15,7 +15,7 @@ const createEventCategory = async (req, res) => {
       return res.status(409).json({ success: false, message: "Event category with this name already exists" });
     }
 
-    const category = await EventCategory.create({ name, description, status, created_by });
+    const category = await EventCategory.create({ name, description, status, created_by: req.user._id });
 
     return res.status(201).json({ success: true, message: "Event category created successfully", data: category });
   } catch (error) {

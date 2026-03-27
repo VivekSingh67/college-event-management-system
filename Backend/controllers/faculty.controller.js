@@ -6,31 +6,38 @@ const { sendCredentialsEmail } = require("../utils/email.utils");
 
 // ─── Create Faculty ───────────────────────────────────────────────────────────
 const createFaculty = async (req, res) => {
+  console.log("Creating faculty with body:", req.body);
   try {
     const {
       name, email, phone, password,
       branch_id, department_id, employee_id, designation, qualification, experience_years, joining_date, status,
     } = req.body;
 
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({ success: false, message: "name, email, phone, and password are required" });
+    const finalPassword = password || "1";
+
+    if (!name || !email || !phone) {
+      console.warn("Validation failed: name/email/phone missing");
+      return res.status(400).json({ success: false, message: "name, email, and phone are required" });
     }
     if (!branch_id || !department_id || !employee_id || !joining_date) {
+      console.warn("Validation failed: required faculty fields missing", { branch_id, department_id, employee_id, joining_date });
       return res.status(400).json({ success: false, message: "branch_id, department_id, employee_id, and joining_date are required" });
     }
 
     const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { phone }] });
     if (existingUser) {
+      console.warn("User conflict found", { email, phone });
       return res.status(409).json({ success: false, message: "A user with this email or phone already exists" });
     }
 
     const existingFaculty = await Faculty.findOne({ employee_id });
     if (existingFaculty) {
+      console.warn("Faculty conflict found", { employee_id });
       return res.status(409).json({ success: false, message: "Faculty with this employee_id already exists" });
     }
 
     // 1. Create User record
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(finalPassword);
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -45,16 +52,17 @@ const createFaculty = async (req, res) => {
       branch_id,
       department_id,
       employee_id,
-      designation,
+      designation: designation || "Assistant Professor",
       qualification,
-      experience_years,
+      experience_years: experience_years || 0,
       joining_date,
       status: status || "active",
     });
 
     // 3. Send credentials email (non-blocking)
-    sendCredentialsEmail({ to: email, name, role: "faculty", password });
+    sendCredentialsEmail({ to: email, name, role: "faculty", password: finalPassword });
 
+    console.log("Faculty created successfully ID:", faculty._id);
     return res.status(201).json({
       success: true,
       message: "Faculty created successfully. Login credentials have been emailed.",
@@ -64,6 +72,7 @@ const createFaculty = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("FATAL ERROR in createFaculty:", error);
     if (error.code === 11000) {
       return res.status(409).json({ success: false, message: "Duplicate field value", error: error.message });
     }

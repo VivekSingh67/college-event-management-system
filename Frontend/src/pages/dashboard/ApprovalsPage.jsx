@@ -40,6 +40,7 @@ export default function ApprovalsPage() {
       columns={columns} 
       fields={fields} 
       fetchUrl="/api/event-approvals" 
+      hideAdd={true}
     />
   );
 }

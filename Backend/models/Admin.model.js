@@ -28,7 +28,7 @@ const adminSchema = new mongoose.Schema(
 
     designation: {
       type: String,
-      default: "Branch Admin",
+      default: "admin",
     },
 
     joining_date: {

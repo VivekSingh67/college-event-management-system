@@ -8,7 +8,6 @@ export const roleSidebarItems = {
     { title: "HODs", icon: "Users", href: "/dashboard/hods" },
     { title: "Event Categories", icon: "Tag", href: "/dashboard/categories" },
     { title: "Announcements", icon: "Megaphone", href: "/dashboard/announcements" },
-    { title: "Reports", icon: "BarChart3", href: "/dashboard/reports" },
     { title: "Queries / Support", icon: "HelpCircle", href: "/dashboard/support" },
     { title: "Activity Logs", icon: "ScrollText", href: "/dashboard/activity" },
     { title: "Notifications", icon: "Bell", href: "/dashboard/notifications" },
@@ -25,7 +24,6 @@ export const roleSidebarItems = {
     { title: "Event Registrations", icon: "ClipboardList", href: "/dashboard/registrations" },
     { title: "Approvals", icon: "CheckCircle", href: "/dashboard/approvals" },
     { title: "Event Venues", icon: "MapPin", href: "/dashboard/venues" },
-    { title: "Reports", icon: "BarChart3", href: "/dashboard/reports" },
     { title: "Announcements", icon: "Megaphone", href: "/dashboard/announcements" },
     { title: "Notifications", icon: "Bell", href: "/dashboard/notifications" },
   ],
@@ -39,7 +37,6 @@ export const roleSidebarItems = {
     { title: "Approvals", icon: "CheckCircle", href: "/dashboard/approvals" },
     { title: "Attendance", icon: "ListChecks", href: "/dashboard/attendance" },
     { title: "Certificates", icon: "Award", href: "/dashboard/certificates" },
-    { title: "Reports", icon: "BarChart3", href: "/dashboard/reports" },
     { title: "Announcements", icon: "Megaphone", href: "/dashboard/announcements" },
   ],
   "faculty": [

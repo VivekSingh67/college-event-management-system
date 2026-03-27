@@ -7,17 +7,20 @@ const createEvent = async (req, res) => {
     const {
       branch_id, department_id, event_title, event_type, event_description, event_banner,
       event_date, start_time, end_time, location, max_participants, registration_deadline,
-      organizer_name, created_by, created_by_role, approval_status, event_status,
+      organizer_name, approval_status, event_status,
     } = req.body;
 
-    if (!branch_id || !event_title || !event_type || !event_date || !created_by || !created_by_role) {
-      return res.status(400).json({ success: false, message: "branch_id, event_title, event_type, event_date, created_by, and created_by_role are required" });
+    if (!branch_id || !event_title || !event_type || !event_date) {
+      return res.status(400).json({ success: false, message: "branch_id, event_title, event_type, and event_date are required" });
     }
 
     const event = await Event.create({
       branch_id, department_id, event_title, event_type, event_description, event_banner,
       event_date, start_time, end_time, location, max_participants, registration_deadline,
-      organizer_name, created_by, created_by_role, approval_status, event_status,
+      organizer_name, 
+      created_by: req.user._id, 
+      created_by_role: req.user.role, 
+      approval_status, event_status,
     });
 
     return res.status(201).json({ success: true, message: "Event created successfully", data: event });

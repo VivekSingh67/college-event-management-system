@@ -42,23 +42,6 @@ const fields = [
     optionLabel: "department_name",
     optionValue: "_id",
   },
-  {
-    key: "created_by",
-    label: "Created By (User)",
-    type: "select",
-    optionsUrl: "/api/users",
-    optionLabel: "name",
-    optionValue: "_id",
-    required: true,
-  },
-  {
-    key: "created_by_role",
-    label: "Creator Role",
-    type: "select",
-    // Backend validation: must be admin, hod, or faculty
-    options: ["admin", "hod", "faculty"],
-    required: true,
-  },
   { key: "location", label: "Venue / Location", placeholder: "e.g. Main Auditorium" },
   { key: "organizer_name", label: "Organizer Name", placeholder: "e.g. Prof. Smith" },
   { key: "start_time", label: "Start Time", placeholder: "e.g. 10:00 AM" },

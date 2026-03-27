@@ -9,15 +9,6 @@ const columns = [
 const fields = [
   { key: "name", label: "Category Name", required: true, placeholder: "e.g. Technical" },
   { key: "description", label: "Description", type: "textarea", placeholder: "Enter description" },
-  { 
-    key: "created_by", 
-    label: "Created By", 
-    type: "select", 
-    optionsUrl: "/api/users", 
-    optionLabel: "name", 
-    optionValue: "_id",
-    required: true 
-  },
   { key: "status", label: "Status", type: "select", options: ["active", "inactive"] },
 ];
 

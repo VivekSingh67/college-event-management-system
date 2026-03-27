@@ -18,7 +18,6 @@ import BranchAdminsPage from "./pages/dashboard/BranchAdminsPage";
 import DepartmentsPage from "./pages/dashboard/DepartmentsPage";
 import HodsPage from "./pages/dashboard/HodsPage";
 import CategoriesPage from "./pages/dashboard/CategoriesPage";
-import ReportsPage from "./pages/dashboard/ReportsPage";
 import SupportPage from "./pages/dashboard/SupportPage";
 import ActivityPage from "./pages/dashboard/ActivityPage";
 import NotificationsPage from "./pages/dashboard/NotificationsPage";
@@ -62,7 +61,6 @@ const App = () => (
           <Route path="/dashboard/departments" element={<DepartmentsPage />} />
           <Route path="/dashboard/hods" element={<HodsPage />} />
           <Route path="/dashboard/categories" element={<CategoriesPage />} />
-          <Route path="/dashboard/reports" element={<ReportsPage />} />
           <Route path="/dashboard/support" element={<SupportPage />} />
           <Route path="/dashboard/activity" element={<ActivityPage />} />
           <Route path="/dashboard/notifications" element={<NotificationsPage />} />
